@@ -44,7 +44,7 @@ export const registerUser = async (userData) => {
     username,
     email,
     password: hashedPassword,
-    role: role || 'user',
+    role: 'user',
   });
 
   // Remove the password field from the returned user.
