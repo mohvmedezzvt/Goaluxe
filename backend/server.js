@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 
 import connectDB from './config/database.js';
+import authRoutes from './routes/authRoutes.js';
 import goalRoutes from './routes/goalRoutes.js';
 import errorHandler from './middleware/errorHandler.js';
 
@@ -14,6 +15,7 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 
+app.use('/api/auth', authRoutes);
 app.use('/api/goals', goalRoutes);
 
 app.use(errorHandler);

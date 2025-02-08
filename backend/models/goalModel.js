@@ -17,7 +17,7 @@ const goalSchema = new Schema(
     // A detailed explanation of the goal (optional)
     description: {
       type: String,
-      required: true,
+      default: '',
     },
     // The target date by which the goal should be achieved (optional)
     dueDate: {
@@ -33,6 +33,12 @@ const goalSchema = new Schema(
     completed: {
       type: Boolean,
       default: false,
+    },
+    // The ID of the user who owns this goal.
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
   },
   {

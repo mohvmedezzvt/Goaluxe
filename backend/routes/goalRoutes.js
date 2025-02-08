@@ -1,7 +1,11 @@
 import express from 'express';
 import * as goalController from '../controllers/goalController.js';
+import authMiddleware from '../middleware/authMiddleware.js';
+import authorize from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
+
+router.use(authMiddleware);
 
 router.get('/', goalController.getGoals); // GET all goals
 router.post('/', goalController.createGoal); // Create a new goal

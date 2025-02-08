@@ -22,8 +22,10 @@ Goaluxe enables users to:
 - **Retrieve Goals:** List all goals or get details of a single goal by its ID.
 - **Update a Goal:** Modify existing goal details, such as marking a goal as completed.
 - **Delete a Goal:** Remove a goal from the system.
+- **User Authentication:**
+  Users can register and log in to secure their data. Authentication is implemented using JWT tokens.
 
-> **Note:** This MVP does not yet include user authentication. All goals are assumed to belong to a single user.
+> **Note:** In this MVP, all goal-related endpoints are protected, so users must be authenticated to create, update, or delete goals.
 
 ## Technologies Used
 
@@ -31,27 +33,35 @@ Goaluxe enables users to:
 - **MongoDB Atlas** – Managed MongoDB database service
 - **Mongoose** – ODM for MongoDB
 - **ES6+** – Modern JavaScript (using ES modules)
+- **JWT (jsonwebtoken)** – For token generation and verification
+- **bcrypt** – For password hashing
 - **Jest** – Testing framework
 - **ESLint** and **Prettier** – Code quality and formatting
 
 ## Project Structure
 
 ```
-goal-reward-app/
+Goaluxe/
 ├── config/
 │   └── database.js        # Database connection logic
 ├── controllers/
-│   └── goalController.js  # HTTP request handlers
+│   ├── goalController.js  # HTTP request handlers for goals
+│   └── authController.js  # HTTP request handlers for authentication
 ├── middleware/
-│   └── errorHandler.js    # Centralized error handling middleware
+│   ├── errorHandler.js    # Centralized error handling middleware
+│   └── authMiddleware.js  # JWT verification middleware
 ├── models/
-│   └── goalModel.js       # Mongoose schema for goals
+│   ├── goalModel.js       # Mongoose schema for goals
+│   └── userModel.js       # Mongoose schema for users
 ├── routes/
-│   └── goalRoutes.js      # API endpoint definitions
+│   ├── goalRoutes.js      # API endpoints for goals
+│   └── authRoutes.js      # API endpoints for authentication
 ├── services/
-│   └── goalService.js     # Business logic for goals
+│   ├── goalService.js     # Business logic for goals
+│   └── authService.js     # Business logic for user registration & login
 ├── tests/
-│   └── goalService.test.js  # Unit tests for service functions
+│   ├── goalService.test.js  # Unit tests for goal service functions
+│   └── authService.test.js  # Unit tests for authentication service functions
 ├── .env                   # Environment variables (not committed to VCS)
 ├── eslint.config.js       # ESLint configuration (flat config)
 ├── .prettierrc            # Prettier configuration
@@ -65,8 +75,8 @@ goal-reward-app/
 1. **Clone the Repository:**
 
    ```bash
-   git clone <repository-url>
-   cd goal-reward-app
+   git clone https://github.com/mohvmedezzvt/Goaluxe.git
+   cd Goaluxe
    ```
 
 2. **Install Dependencies:**
@@ -82,6 +92,7 @@ goal-reward-app/
    ```env
    PORT=3001
    DB_URI="mongodb+srv://<username>:<password>@goaluxe-cluster0.t4sau.mongodb.net/?retryWrites=true&w=majority&appName=Goaluxe-Cluster0"
+   JWT_SECRET="the-secret-key"
    ```
 
 4. **Configure ESLint and Prettier:**
@@ -105,77 +116,72 @@ goal-reward-app/
 
    ```
    Server is running on port 3001
-   MongoDB Connected: your-cluster-hostname
+   MongoDB Connected: cluster-hostname
    ```
 
 ## API Endpoints
 
-All endpoints are prefixed with `/api/goals`.
+All endpoints are prefixed with `/api`.
 
-### 1. **GET `/api/goals`**
+### **Goal Endpoints**
+- **GET `/goals`**
+  - **Description:** Retrieve all goals.
+  - **Response:** 200 OK with a JSON array of goal objects.
 
-- **Description:** Retrieve all goals.
-- **Response:** 200 OK with a JSON array of goal objects.
-- **Example:**
+- **POST `/goals`**
 
-  ```json
-  [
-    {
-      "_id": "60f8c2d6c2b9a12d4c8e4a3b",
-      "title": "Finish Project",
-      "description": "Complete the backend MVP",
-      "dueDate": "2025-03-01T00:00:00.000Z",
-      "reward": "New Laptop",
-      "completed": false,
-      "createdAt": "2025-02-07T20:00:00.000Z",
-      "updatedAt": "2025-02-07T20:00:00.000Z"
-    }
-  ]
-  ```
+  - **Description:** Create a new goal.
+  - **Request Body:** JSON object with `title`, `description`, `dueDate`, `reward`, and `completed`.
+  - **Response:** 201 Created with the newly created goal document.
 
-### 2. **POST `/api/goals`**
+- **GET `/goals/:id`**
 
-- **Description:** Create a new goal.
-- **Request Body:** JSON object with the following properties:
+  - **Description:** Retrieve a specific goal by its ID.
+  - **Response:**
+    - 200 OK with the goal object if found.
+    - 404 Not Found if the goal does not exist.
 
-  ```json
-  {
-    "title": "Test Goal",
-    "description": "This is a test goal",
-    "dueDate": "2025-03-01T00:00:00.000Z",
-    "reward": "Ice cream",
-    "completed": false
-  }
-  ```
+- **PUT `/goals/:id`**
 
-- **Response:** 201 Created with the newly created goal document.
+  - **Description:** Update a goal by its ID.
+  - **Request Body:** JSON object containing fields to update.
+  - **Response:**
+    - 200 OK with the updated goal document if successful.
+    - 404 Not Found if no goal with the provided ID exists.
 
-### 3. **GET `/api/goals/:id`**
+- **DELETE `/goals/:id`**
 
-- **Description:** Retrieve a specific goal by its ID.
-- **Response:**
-  - 200 OK with the goal object if found.
-  - 404 Not Found if the goal does not exist.
+  - **Description:** Delete a goal by its ID.
+  - **Response:** 204 No Content on successful deletion.
 
-### 4. **PUT `/api/goals/:id`**
+> **Note:** These endpoints are protected by JWT authentication. See below for authentication endpoints.
 
-- **Description:** Update a goal by its ID.
-- **Request Body:** JSON object with updated fields. For example:
+### **Authentication Endpoints**
+- **POST `/auth/register`**
+  - **Description:** Registers a new user.
+  - **Request Body:** JSON object with `username`, `email`, `password`, and optionally `role`.
+  - **Response:** 201 Created with the newly created user object (excluding the password).
 
-  ```json
-  {
-    "completed": true
-  }
-  ```
+- **POST `/auth/login`**
+  - **Description:** Logs in a user.
+  - **Request Body:** JSON object with `email` and `password`.
+  - **Response:** 200 OK with a JWT token and basic user information.
+  - **Errors:** 400 Bad Request if fields are missing, or 401 Unauthorized for invalid credentials.
 
-- **Response:**
-  - 200 OK with the updated goal document if successful.
-  - 404 Not Found if no goal with the provided ID exists.
+## Authentication Workflow
 
-### 5. **DELETE `/api/goals/:id`**
+1. **User Registration:**
+   - The client sends a POST request to `/api/auth/register` with username, email, and password.
+   - The server validates the input, hashes the password using bcrypt, creates a new user, and returns the new user (without the password).
 
-- **Description:** Delete a goal by its ID.
-- **Response:** 204 No Content on successful deletion.
+2. **User Login:**
+   - The client sends a POST request to `/api/auth/login` with email and password.
+   - The server verifies the email and compares the password. If valid, it returns a JWT token along with basic user details.
+   - The client includes the token in the `Authorization` header (as `Bearer <token>`) for subsequent requests to protected endpoints (e.g., goal endpoints).
+
+3. **JWT Verification:**
+   - The `authMiddleware` extracts the token from the request header, verifies it, and attaches the decoded user data to `req.user`.
+   - If verification fails, a 401 Unauthorized error is returned.
 
 ## Testing
 
@@ -188,12 +194,11 @@ Tests are written using Jest and located in the `tests/` directory.
    ```
 
 2. **What’s Tested:**
-   - All CRUD operations in the service layer.
-   - Handling of error conditions (e.g., non-existent IDs, creation failures).
-   - Use of Jest mocks to simulate database operations.
+   - **Goal Service:** CRUD operations (create, retrieve, update, delete).
+   - **Auth Service:** Registration and login scenarios (valid input, missing fields, duplicate user, invalid credentials).
 
 3. **Teardown:**
-   The tests include an `afterAll` hook to disconnect from MongoDB to prevent open handle warnings.
+   - Tests include teardown steps (e.g., disconnecting from Mongoose) to prevent open handles.
 
 ## Error Handling
 
@@ -205,9 +210,11 @@ Tests are written using Jest and located in the `tests/` directory.
 ## Future Enhancements
 
 - **User Authentication:**
-  Adding a Users collection and authentication middleware.
+  Implement additional role-based access controls.
 - **Enhanced Reward Structures:**
   Expanding the reward field to an object to support multiple reward types.
+- **Advanced API Pagination & Filtering:**
+  Extend GET `/api/goals` to support pagination, sorting, and filtering.
 - **Activity Logging:**
   Implementing an activity log collection for audit and tracking purposes.
 - **Frontend Integration:**
