@@ -18,6 +18,7 @@ Goaluxe is a customizable goal and reward system that allows users to set person
 ## Overview
 
 Goaluxe enables users to:
+
 - **Create a Goal:** Provide a title, description, due date, and a custom reward.
 - **Retrieve Goals:** List all goals or get details of a single goal by its ID.
 - **Update a Goal:** Modify existing goal details, such as marking a goal as completed.
@@ -123,8 +124,30 @@ Goaluxe/
 
 All endpoints are prefixed with `/api`.
 
+### **User Endpoints**
+
+- **GET `/users/profile`**
+
+  - **Description:** Retrieves the profile of the authenticated user.
+  - **Response:** 200 OK with the user profile data (password omitted).
+
+- **PUT `/users/profile`**
+
+  - **Description:** Updates the profile of the authenticated user.
+> Note: The update data must not include the role, password field (to prevent users from changing their role and password without validation).
+  - **Response:** 200 OK with the updated user profile.
+
+- **PUT `/users/password`**
+
+  - **Description:** Updates the password for the authenticated user.
+  - **Request Body:** Must include both currentPassword and newPassword.
+  - **Security:** Verifies the current password before hashing and updating to the new password.
+  - **Response:** 200 OK with a success message and the updated user details (password is omitted).
+
 ### **Goal Endpoints**
+
 - **GET `/goals`**
+
   - **Description:** Retrieve all goals.
   - **Response:** 200 OK with a JSON array of goal objects.
 
@@ -157,7 +180,9 @@ All endpoints are prefixed with `/api`.
 > **Note:** These endpoints are protected by JWT authentication. See below for authentication endpoints.
 
 ### **Authentication Endpoints**
+
 - **POST `/auth/register`**
+
   - **Description:** Registers a new user.
   - **Request Body:** JSON object with `username`, `email`, `password`, and optionally `role`.
   - **Response:** 201 Created with the newly created user object (excluding the password).
@@ -168,13 +193,15 @@ All endpoints are prefixed with `/api`.
   - **Response:** 200 OK with a JWT token and basic user information.
   - **Errors:** 400 Bad Request if fields are missing, or 401 Unauthorized for invalid credentials.
 
-## Authentication Workflow
+## Authentication & User Profile Workflow
 
 1. **User Registration:**
+
    - The client sends a POST request to `/api/auth/register` with username, email, and password.
    - The server validates the input, hashes the password using bcrypt, creates a new user, and returns the new user (without the password).
 
 2. **User Login:**
+
    - The client sends a POST request to `/api/auth/login` with email and password.
    - The server verifies the email and compares the password. If valid, it returns a JWT token along with basic user details.
    - The client includes the token in the `Authorization` header (as `Bearer <token>`) for subsequent requests to protected endpoints (e.g., goal endpoints).
@@ -182,6 +209,16 @@ All endpoints are prefixed with `/api`.
 3. **JWT Verification:**
    - The `authMiddleware` extracts the token from the request header, verifies it, and attaches the decoded user data to `req.user`.
    - If verification fails, a 401 Unauthorized error is returned.
+
+4. **User Profile Management:**
+   - Authenticated users can retrieve their profile using the GET /api/users/profile endpoint.
+   - They can update their profile using the PUT /api/users/profile endpoint, where updates to the role and password fields are not allowed.
+   - Users can update their password through the PUT /api/users/password endpoint, which verifies the current password before updating.
+
+5. **Goal Ownership Enforcement:**
+
+   - When creating a goal, the authenticated user's ID is attached to the goal.
+   - For retrieval, updates, and deletion of a goal, the system checks that the goal’s user field matches the authenticated user's ID.
 
 ## Testing
 
@@ -194,6 +231,7 @@ Tests are written using Jest and located in the `tests/` directory.
    ```
 
 2. **What’s Tested:**
+
    - **Goal Service:** CRUD operations (create, retrieve, update, delete).
    - **Auth Service:** Registration and login scenarios (valid input, missing fields, duplicate user, invalid credentials).
 

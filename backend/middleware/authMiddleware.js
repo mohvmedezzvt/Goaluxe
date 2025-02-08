@@ -26,14 +26,12 @@ const authMiddleware = (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    // Verify the token using the JWT secret (ensure JWT_SECRET is set in your .env file)
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     // Attach the decoded payload (user data) to the request object
     req.user = decoded;
     // Proceed to the next middleware or controller
     next();
-  } catch (error) {
-    // If verification fails, respond with a 401 Unauthorized status
+  } catch (error /* eslint-disable-line no-unused-vars */) {
     return res.status(401).json({ message: 'Invalid or expired token' });
   }
 };

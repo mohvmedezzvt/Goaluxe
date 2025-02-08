@@ -7,6 +7,7 @@
  * @param {Response} res - The Express response object.
  * @param {Function} next - The next middleware function.
  */
+/* eslint-disable no-unused-vars */
 const errorHandler = (err, req, res, next) => {
   // Log the error stack trace for debugging purposes.
   console.error(err.stack);
