@@ -13,7 +13,14 @@ export const createGoal = async (req, res, next) => {
 
     goalData.user = req.user.id;
 
+    if (goalData.rewardOptionId) {
+      goalData.reward = goalData.rewardOptionId;
+      delete goalData.rewardOptionId;
+    }
+
     const goal = await goalService.createGoal(goalData);
+    await goal.populate('reward');
+
     res.status(201).json(goal);
   } catch (error) {
     next(error);
@@ -75,6 +82,12 @@ export const updateGoal = async (req, res, next) => {
       return res.status(400).json({ message: 'Update data is required' });
     }
 
+    // If a rewardOptionId is provided, use it as the reward reference.
+    if (updateData.rewardOptionId) {
+      updateData.reward = updateData.rewardOptionId;
+      delete updateData.rewardOptionId;
+    }
+
     const goal = await goalService.getGoalById(id);
     if (!goal) {
       return res.status(404).json({ message: 'Goal not found' });
@@ -86,6 +99,8 @@ export const updateGoal = async (req, res, next) => {
     }
 
     const updatedGoal = await goalService.updateGoal(id, updateData);
+    await updatedGoal.populate('reward');
+
     res.status(200).json(updatedGoal);
   } catch (error) {
     next(error);

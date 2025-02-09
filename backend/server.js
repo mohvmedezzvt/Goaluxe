@@ -6,6 +6,7 @@ import connectDB from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import goalRoutes from './routes/goalRoutes.js';
+import rewardRoutes from './routes/rewardRoutes.js';
 import errorHandler from './middleware/errorHandler.js';
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/goals', goalRoutes);
+app.use('/api/rewards', rewardRoutes);
 
 app.use(errorHandler);
 

@@ -26,8 +26,9 @@ const goalSchema = new Schema(
     },
     // The custom reward associated with the goal (optional)
     reward: {
-      type: String,
-      default: '',
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Reward',
+      default: null,
     },
     // Indicates whether the goal has been completed (defaults to false)
     completed: {

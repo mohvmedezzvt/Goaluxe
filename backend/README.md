@@ -42,33 +42,52 @@ Goaluxe enables users to:
 ## Project Structure
 
 ```
-Goaluxe/
+Goaluxe/backend/
+├── babel.config.js         // Babel configuration for transpiling modern JavaScript.
+├── eslint.config.js        // ESLint flat configuration for enforcing code quality and style.
+├── package.json            // Project metadata, scripts, and dependency definitions.
+├── package-lock.json       // Auto-generated file locking dependency versions.
+├── jest.config.js          // Jest configuration for running unit and integration tests.
+├── BACKLOG.md              // Feature backlog and future enhancement documentation.
+├── README.md               // This documentation file.
+├── server.js               // Main entry point to initialize and run the Express server.
+│
 ├── config/
-│   └── database.js        # Database connection logic
+│   └── database.js         // Database connection logic using Mongoose.
+│
 ├── controllers/
-│   ├── goalController.js  # HTTP request handlers for goals
-│   └── authController.js  # HTTP request handlers for authentication
+│   ├── authController.js   // Handles authentication (user registration and login).
+│   ├── goalController.js   // Manages goal CRUD operations and ownership enforcement.
+│   ├── rewardController.js // Manages reward CRUD operations and reward option selection.
+│   └── userController.js   // Manages user profile retrieval, updates, and password changes.
+│
 ├── middleware/
-│   ├── errorHandler.js    # Centralized error handling middleware
-│   └── authMiddleware.js  # JWT verification middleware
+│   ├── authMiddleware.js   // Verifies JWT tokens and attaches authenticated user info to requests.
+│   ├── errorHandler.js     // Centralized error-handling middleware for consistent API error responses.
+│   └── roleMiddleware.js   // Enforces role-based access control on protected routes.
+│
 ├── models/
-│   ├── goalModel.js       # Mongoose schema for goals
-│   └── userModel.js       # Mongoose schema for users
+│   ├── goalModel.js        // Mongoose schema for user goals, includes a reference to a Reward.
+│   ├── rewardModel.js      // Mongoose schema for rewards (supports both public and custom rewards).
+│   └── userModel.js        // Mongoose schema for user accounts (with fields like username, email, password, and role).
+│
 ├── routes/
-│   ├── goalRoutes.js      # API endpoints for goals
-│   └── authRoutes.js      # API endpoints for authentication
+│   ├── authRoutes.js       // Defines API endpoints for authentication (register, login).
+│   ├── goalRoutes.js       // Defines API endpoints for goal management (CRUD operations).
+│   ├── rewardRoutes.js     // Defines API endpoints for reward management (CRUD and reward options).
+│   └── userRoutes.js       // Defines API endpoints for user profile management and password updates.
+│
 ├── services/
-│   ├── goalService.js     # Business logic for goals
-│   └── authService.js     # Business logic for user registration & login
-├── tests/
-│   ├── goalService.test.js  # Unit tests for goal service functions
-│   └── authService.test.js  # Unit tests for authentication service functions
-├── .env                   # Environment variables (not committed to VCS)
-├── eslint.config.js       # ESLint configuration (flat config)
-├── .prettierrc            # Prettier configuration
-├── package.json           # Project metadata and dependencies
-├── server.js              # Entry point to initialize the Express server
-└── README.md              # This documentation file
+│   ├── authService.js      // Contains business logic for user authentication.
+│   ├── goalService.js      // Contains business logic for goal CRUD operations.
+│   ├── rewardService.js    // Contains business logic for reward CRUD operations and reward option retrieval/creation.
+│   └── userService.js      // Contains business logic for user profile management and password change functionality.
+│
+└── tests/
+    ├── authService.test.js // Unit tests for authentication service functions.
+    ├── goalService.test.js // Unit tests for goal service functions.
+    ├── rewardService.test.js // Unit tests for reward service functions.
+    └── userService.test.js // Unit tests for user service functions.
 ```
 
 ## Setup Instructions
@@ -123,6 +142,20 @@ Goaluxe/
 ## API Endpoints
 
 All endpoints are prefixed with `/api`.
+
+### **Authentication Endpoints**
+
+- **POST `/auth/register`**
+
+  - **Description:** Registers a new user.
+  - **Request Body:** JSON object with `username`, `email`, `password`, and optionally `role`.
+  - **Response:** 201 Created with the newly created user object (excluding the password).
+
+- **POST `/auth/login`**
+  - **Description:** Logs in a user.
+  - **Request Body:** JSON object with `email` and `password`.
+  - **Response:** 200 OK with a JWT token and basic user information.
+  - **Errors:** 400 Bad Request if fields are missing, or 401 Unauthorized for invalid credentials.
 
 ### **User Endpoints**
 
@@ -179,19 +212,75 @@ All endpoints are prefixed with `/api`.
 
 > **Note:** These endpoints are protected by JWT authentication. See below for authentication endpoints.
 
-### **Authentication Endpoints**
+### **Reward Endpoints**
 
-- **POST `/auth/register`**
+- **GET `/api/rewards`**
 
-  - **Description:** Registers a new user.
-  - **Request Body:** JSON object with `username`, `email`, `password`, and optionally `role`.
-  - **Response:** 201 Created with the newly created user object (excluding the password).
+  - **Description:** Retrieves the list of reward options available to the authenticated user. This includes public (predefined) rewards as well as custom rewards that the user has created.
+  - **Response:** 200 OK with a JSON array of Reward objects.
+    _Example Response:_
+    ```json
+    [
+      {
+        "_id": "62a9f2e5b1234567890abcef",
+        "type": "points",
+        "value": 100,
+        "description": "100 points reward",
+        "public": true,
+        "createdBy": null
+      },
+      {
+        "_id": "62a9f2f6b1234567890abcf0",
+        "type": "badge",
+        "description": "Custom badge for completing 5 goals",
+        "public": false,
+        "createdBy": "user123"
+      }
+    ]
+    ```
 
-- **POST `/auth/login`**
-  - **Description:** Logs in a user.
-  - **Request Body:** JSON object with `email` and `password`.
-  - **Response:** 200 OK with a JWT token and basic user information.
-  - **Errors:** 400 Bad Request if fields are missing, or 401 Unauthorized for invalid credentials.
+- **POST `/api/rewards`**
+
+  - **Description:** Creates a reward. For non-admin users, any provided `public` flag is ignored and the reward is marked as private. Admin users can explicitly set the `public` field.
+  - **Request Body (for non-admin):**
+    ```json
+    {
+      "type": "points",
+      "value": 100,
+      "description": "Reward for completing a challenging goal",
+      "public": true   // This will be forced to false for non-admin users.
+    }
+    ```
+  - **Response:** 201 Created with a JSON object representing the new Reward.
+    _Example Response (non-admin):_
+    ```json
+    {
+      "_id": "62a9f2e5b1234567890abcef",
+      "type": "points",
+      "value": 100,
+      "description": "Reward for completing a challenging goal",
+      "public": false,
+      "createdBy": "user123"
+    }
+    ```
+
+- **PUT `/api/rewards/:id`**
+
+  - **Description:** Updates an existing reward. Only admins can update public rewards, and non-admin users can update only the custom rewards they created.
+  - **Request Body Example:**
+    ```json
+    {
+      "description": "Updated reward description"
+    }
+    ```
+  - **Response:** 200 OK with the updated Reward object.
+    _Note:_ If the user is not authorized, a 403 Forbidden is returned.
+
+- **DELETE `/api/rewards/:id`**
+
+  - **Description:** Deletes a reward. Only admins can delete public rewards, and non-admin users can delete only their own custom rewards.
+  - **Response:** 204 No Content on successful deletion.
+  - **Error Cases:** 403 Forbidden if the user is not authorized, 404 Not Found if the reward doesn't exist.
 
 ## Authentication & User Profile Workflow
 
@@ -219,6 +308,12 @@ All endpoints are prefixed with `/api`.
 
    - When creating a goal, the authenticated user's ID is attached to the goal.
    - For retrieval, updates, and deletion of a goal, the system checks that the goal’s user field matches the authenticated user's ID.
+
+6. **Reward Options & Selection:**
+   - Rewards are now managed in a separate collection.
+   - Users can choose from a curated list of public rewards (predefined by admins) or create their own custom rewards.
+   - When creating or updating a goal, the client can send a `rewardOptionId` to reference a Reward document.
+   - The goal's `reward` field stores a reference (ObjectId) to a Reward document, and reward details can be populated as needed.
 
 ## Testing
 
