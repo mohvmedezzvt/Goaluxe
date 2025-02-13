@@ -1,6 +1,7 @@
 import 'dotenv/config.js';
 import express from 'express';
 import cors from 'cors';
+import morgan from 'morgan';
 
 import connectDB from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
@@ -16,7 +17,7 @@ connectDB();
 
 app.use(cors());
 app.use(express.json());
-
+app.use(morgan('dev'));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/goals', goalRoutes);

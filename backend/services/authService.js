@@ -2,7 +2,7 @@ import User from '../models/userModel.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-const SALT_ROUNDS = process.env.SALT_ROUNDS || 10;
+const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) || 10;
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 const JWT_EXPIRES_IN = '1d';
 
@@ -37,7 +37,8 @@ export const registerUser = async (userData) => {
   }
 
   // Hash the password.
-  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+  const salt = await bcrypt.genSalt(SALT_ROUNDS);
+  const hashedPassword = await bcrypt.hash(password, salt);
 
   // Create the user document.
   const newUser = await User.create({
