@@ -1,99 +1,113 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { auth } from "@/lib/api"
-import { validateEmail, validatePassword, validateUsername, isStrongPassword } from "@/lib/validations"
-import type { LoginResponse, RegisterResponse } from "@/lib/api"
-import { toast } from "sonner"
-import { useAuth } from "@/hooks/use-auth"
-import { setCookie } from 'cookies-next'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { auth } from "@/lib/api";
+import {
+  validateEmail,
+  validatePassword,
+  validateUsername,
+  isStrongPassword,
+} from "@/lib/validations";
+import type { LoginResponse, RegisterResponse } from "@/lib/api";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
+import { setCookie } from "cookies-next";
 
 interface AuthFormProps {
-  mode: 'login' | 'register'
+  mode: "login" | "register";
 }
 
 interface FormData {
-  username: string
-  email: string
-  password: string
+  username: string;
+  email: string;
+  password: string;
 }
 
 interface FormErrors {
-  username?: string
-  email?: string
-  password?: string
-  general?: string
+  username?: string;
+  email?: string;
+  password?: string;
+  general?: string;
 }
 
 export function AuthForm({ mode }: AuthFormProps) {
-  const router = useRouter()
-  const { login } = useAuth()
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    username: '',
-    email: '',
-    password: '',
-  })
-  const [errors, setErrors] = useState<FormErrors>({})
+    username: "",
+    email: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const validateForm = (): boolean => {
-    const newErrors: FormErrors = {}
+    const newErrors: FormErrors = {};
 
     if (!validateEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address'
+      newErrors.email = "Please enter a valid email address";
     }
 
-    if (mode === 'register') {
+    if (mode === "register") {
       if (!isStrongPassword(formData.password)) {
-        newErrors.password = 'Password must be at least 8 characters and include uppercase, lowercase, and numbers'
+        newErrors.password =
+          "Password must be at least 8 characters and include uppercase, lowercase, and numbers";
       }
     } else {
       if (!validatePassword(formData.password)) {
-        newErrors.password = 'Password must be at least 6 characters'
+        newErrors.password = "Password must be at least 6 characters";
       }
     }
 
-    if (mode === 'register' && !validateUsername(formData.username)) {
-      newErrors.username = 'Username must be 3-20 characters and can contain letters, numbers, underscores, and hyphens'
+    if (mode === "register" && !validateUsername(formData.username)) {
+      newErrors.username =
+        "Username must be 3-20 characters and can contain letters, numbers, underscores, and hyphens";
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
+    const { name, value } = e.target;
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
-    }))
+      [name]: value,
+    }));
     // Clear error when user starts typing
     if (errors[name as keyof FormErrors]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: undefined
-      }))
+        [name]: undefined,
+      }));
     }
-  }
+  };
 
   async function onSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    if (!validateForm()) return
+    event.preventDefault();
+    if (!validateForm()) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
     const loadingToast = toast.loading(
-      mode === 'login' ? 'Signing in...' : 'Creating your account...'
-    )
+      mode === "login" ? "Signing in..." : "Creating your account..."
+    );
 
     try {
       let response;
-      
-      if (mode === 'login') {
+
+      if (mode === "login") {
         response = await auth.login(formData.email, formData.password);
       } else {
         response = await auth.register(
@@ -104,37 +118,37 @@ export function AuthForm({ mode }: AuthFormProps) {
       }
 
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Authentication failed');
+        throw new Error(response.error || "Authentication failed");
       }
 
       // Store auth data
-      setCookie('token', response.data.token);
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      setCookie("token", response.data.token);
+      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
 
       // Dismiss loading toast
       toast.dismiss(loadingToast);
-      
+
       // Show success message
       toast.success(
-        mode === 'login' 
-          ? `Welcome back, ${response.data.user.username}!` 
-          : 'Account created successfully!'
+        mode === "login"
+          ? `Welcome back, ${response.data.user.username}!`
+          : "Account created successfully!"
       );
 
       // Update auth state
       await login(response.data.user);
 
       // Navigate to dashboard
-      window.location.href = '/dashboard';
-
+      window.location.href = "/dashboard";
     } catch (error) {
       toast.dismiss(loadingToast);
-      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : "An error occurred";
       toast.error(errorMessage);
-      
+
       setErrors({
-        general: errorMessage
+        general: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -144,11 +158,13 @@ export function AuthForm({ mode }: AuthFormProps) {
   return (
     <Card className="w-[350px]">
       <CardHeader>
-        <CardTitle>{mode === 'login' ? 'Login' : 'Create an account'}</CardTitle>
+        <CardTitle>
+          {mode === "login" ? "Login" : "Create an account"}
+        </CardTitle>
         <CardDescription>
-          {mode === 'login' 
-            ? 'Enter your credentials to access your account'
-            : 'Enter your information to create an account'}
+          {mode === "login"
+            ? "Enter your credentials to access your account"
+            : "Enter your information to create an account"}
         </CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
@@ -158,11 +174,11 @@ export function AuthForm({ mode }: AuthFormProps) {
               {errors.general}
             </div>
           )}
-          
-          {mode === 'register' && (
+
+          {mode === "register" && (
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
-              <Input 
+              <Input
                 id="username"
                 name="username"
                 type="text"
@@ -177,7 +193,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               )}
             </div>
           )}
-          
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -194,7 +210,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               <p className="text-sm text-red-500">{errors.email}</p>
             )}
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <Input
@@ -211,17 +227,17 @@ export function AuthForm({ mode }: AuthFormProps) {
             )}
           </div>
         </CardContent>
-        
+
         <CardFooter className="flex flex-col space-y-2">
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Sign up'}
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading
+              ? "Please wait..."
+              : mode === "login"
+                ? "Sign in"
+                : "Sign up"}
           </Button>
         </CardFooter>
       </form>
     </Card>
-  )
-} 
+  );
+}
