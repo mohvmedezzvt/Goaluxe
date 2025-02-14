@@ -1,7 +1,6 @@
 {
   "name": "root",
   "private": true,
-  "dependencies": {},
   "workspaces": [
     "packages/*"
   ],
@@ -10,6 +9,8 @@
     "dev": "lerna run dev --scope=frontend"
   },
   "devDependencies": {
+    "@nrwl/cli": "^15.9.3",
+    "@nrwl/workspace": "^19.8.4",
     "lerna": "^8.1.9"
   }
 }
