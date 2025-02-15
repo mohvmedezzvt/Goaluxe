@@ -42,4 +42,14 @@ const userSchema = new Schema(
   }
 );
 
+userSchema.set('toJSON', {
+  virtuals: true,
+  transform: (doc, ret) => {
+    ret.id = ret._id; // add a new 'id' field with the value of '_id'
+    delete ret._id; // remove the '_id' field
+    delete ret.__v; // optionally remove the __v field
+    return ret;
+  },
+});
+
 export default mongoose.model('User', userSchema);
