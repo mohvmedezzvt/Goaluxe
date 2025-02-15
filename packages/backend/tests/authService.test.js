@@ -1,11 +1,11 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import * as authService from '../services/authService.js';
 import User from '../models/userModel.js';
 
 // Mock the User model and external libraries
 jest.mock('../models/userModel.js');
-jest.mock('bcrypt');
+jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
 
 describe('Auth Service', () => {

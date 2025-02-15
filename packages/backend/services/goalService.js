@@ -25,7 +25,7 @@ export const createGoal = async (data) => {
  *
  * @returns {Promise<Array>} - An array of goal documents.
  */
-export const getGoals = async (userId, query) => {
+export const getGoals = async (userId, query = {}) => {
   // Parse pagination parameters from the query; default to page 1 and limit 10
   const page = parseInt(query.page, 10) || 1;
   const maxLimit = 100;

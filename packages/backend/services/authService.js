@@ -37,8 +37,7 @@ export const registerUser = async (userData) => {
   }
 
   // Hash the password.
-  const salt = await bcrypt.genSalt(SALT_ROUNDS);
-  const hashedPassword = await bcrypt.hash(password, salt);
+  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
   // Create the user document.
   const newUser = await User.create({
