@@ -46,6 +46,17 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  // Auto sign-in logic for root ("/")
+  if (pathname === "/") {
+    if (token) {
+      log("Auto sign-in: Redirecting to dashboard");
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    } else {
+      log("No token: Redirecting to login");
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 
