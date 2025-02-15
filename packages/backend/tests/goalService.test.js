@@ -48,29 +48,51 @@ describe('Goal Service', () => {
   describe('getGoals', () => {
     it('should return an array of goals', async () => {
       // Arrange
-      const goals = [
-        { _id: '1', title: 'Goal 1' },
-        { _id: '2', title: 'Goal 2' },
+      const userId = 'user123';
+      const mockGoals = [
+        { _id: '1', title: 'Goal 1', user: userId },
+        { _id: '2', title: 'Goal 2', user: userId },
       ];
-      Goal.find.mockResolvedValue(goals);
+      // Create a chainable query mock using mockReturnThis() so that skip() returns the same object.
+      const mockQuery = {
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue(mockGoals),
+      };
+
+      // Mock Goal.find to return our chainable mock query object.
+      Goal.find.mockReturnValue(mockQuery);
 
       // Act
-      const result = await goalService.getGoals();
+      const result = await goalService.getGoals(userId, {});
 
       // Assert
-      expect(Goal.find).toHaveBeenCalledWith({});
-      expect(result).toEqual(goals);
+      expect(Goal.find).toHaveBeenCalledWith({ user: userId });
+      expect(mockQuery.skip).toHaveBeenCalled();
+      expect(mockQuery.limit).toHaveBeenCalled();
+      expect(result).toEqual(mockGoals);
     });
 
     it('should return an empty array if no goals exist', async () => {
       // Arrange
-      Goal.find.mockResolvedValue([]);
+      const userId = 'user123';
+      const mockGoals = []; // No Goals
+      // Create a chainable query object
+      const mockQuery = {
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue(mockGoals),
+      };
 
-      // Act
-      const result = await goalService.getGoals();
+      // When Goal.find is called with the filter, return our mock query object
+      Goal.find.mockReturnValue(mockQuery);
+
+      // Act - pass an empty object as query
+      const result = await goalService.getGoals(userId, {});
 
       // Assert
-      expect(result).toEqual([]);
+      expect(Goal.find).toHaveBeenCalledWith({ user: userId });
+      expect(mockQuery.skip).toHaveBeenCalled();
+      expect(mockQuery.limit).toHaveBeenCalled();
+      expect(result).toEqual(mockGoals);
     });
   });
 
