@@ -1,10 +1,10 @@
 import * as userService from '../services/userService.js';
 import User from '../models/userModel.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 // Mock the User model and bcrypt library
 jest.mock('../models/userModel.js');
-jest.mock('bcrypt');
+jest.mock('bcryptjs');
 
 describe('User Service', () => {
   beforeEach(() => {

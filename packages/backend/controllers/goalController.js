@@ -39,12 +39,12 @@ export const createGoal = async (req, res, next) => {
 };
 
 /**
- * Retrieves all goals.
+ * Retrieves all goals for the authenticated user with pagination and filtering.
  */
 export const getGoals = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const goals = await goalService.getGoals(userId);
+    const goals = await goalService.getGoals(userId, req.query);
     res.status(200).json(goals);
   } catch (error) {
     next(error);
