@@ -54,9 +54,11 @@ export default function DashboardPage() {
 
   const activeGoals = goals.filter((goal) => goal.status === "active");
   const completedGoals = goals.filter((goal) => goal.status === "completed");
-  const averageProgress = goals.length
+  const averageProgress = Number.isNaN(goals.length)
     ? goals.reduce((acc, goal) => acc + goal.progress, 0) / goals.length
     : 0;
+
+  console.log(averageProgress);
 
   const handleDeleteGoal = async () => {
     if (deletingGoal) {
@@ -64,7 +66,6 @@ export default function DashboardPage() {
       setDeletingGoal(null);
     }
   };
-
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500">
       {/* Header Section - Improved mobile layout */}
