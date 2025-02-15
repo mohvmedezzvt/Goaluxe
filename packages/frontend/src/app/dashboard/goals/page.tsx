@@ -1,22 +1,22 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useGoals } from "@/hooks/use-goals"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Pencil, Trash2 } from "lucide-react"
-import { Progress } from "@/components/ui/progress"
-import { AddGoalDialog } from "@/components/goals/add-goal-dialog"
-import { EditGoalDialog } from "@/components/goals/edit-goal-dialog"
-import { Loading } from "@/components/ui/loading"
+import { useState } from "react";
+import { useGoals } from "@/hooks/use-goals";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { AddGoalDialog } from "@/components/goals/add-goal-dialog";
+import { EditGoalDialog } from "@/components/goals/edit-goal-dialog";
+import { Loading } from "@/components/ui/loading";
 
 export default function GoalsPage() {
-  const { goals, loading } = useGoals()
-  const [showAddDialog, setShowAddDialog] = useState(false)
-  const [editingGoal, setEditingGoal] = useState<string | null>(null)
+  const { goals, loading } = useGoals();
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<string | null>(null);
 
   if (loading) {
-    return <Loading />
+    return <Loading />;
   }
 
   return (
@@ -30,8 +30,8 @@ export default function GoalsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {goals.map(goal => (
-          <Card key={goal.id}>
+        {goals.map((goal) => (
+          <Card key={goal._id}>
             <CardHeader className="flex flex-row items-start justify-between space-y-0">
               <CardTitle className="text-base font-medium">
                 {goal.title}
@@ -40,7 +40,7 @@ export default function GoalsPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setEditingGoal(goal.id)}
+                  onClick={() => setEditingGoal(goal._id)}
                 >
                   <Pencil className="w-4 h-4" />
                 </Button>
@@ -65,7 +65,9 @@ export default function GoalsPage() {
                 <Progress value={goal.progress} />
               </div>
               <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
+                <span>
+                  Target: {new Date(goal.targetDate).toLocaleDateString()}
+                </span>
                 <span className="capitalize">{goal.status}</span>
               </div>
             </CardContent>
@@ -73,10 +75,7 @@ export default function GoalsPage() {
         ))}
       </div>
 
-      <AddGoalDialog 
-        open={showAddDialog} 
-        onOpenChange={setShowAddDialog} 
-      />
+      <AddGoalDialog open={showAddDialog} onOpenChange={setShowAddDialog} />
 
       {editingGoal && (
         <EditGoalDialog
@@ -86,5 +85,5 @@ export default function GoalsPage() {
         />
       )}
     </div>
-  )
-} 
+  );
+}
