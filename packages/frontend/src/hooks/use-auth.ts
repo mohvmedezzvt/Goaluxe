@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 import { auth } from "@/lib/api";
 import { toast } from "sonner";
-
+import { useRouter } from "next/navigation";
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const router = useRouter();
   useEffect(() => {
     checkAuth();
   }, []);
@@ -41,7 +41,7 @@ export function useAuth() {
       setUser(null);
 
       toast.success("Logged out successfully");
-      window.location.href = "/login";
+      router.push("login");
     } catch (error) {
       toast.error("Error logging out");
     }
