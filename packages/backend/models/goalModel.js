@@ -5,7 +5,7 @@ const { Schema } = mongoose;
 /**
  * Goal Schema
  * Representing a single user-defined goal with a title, description, optional due date, custom reward,
- * and a flag indicating completion status. Timestamps are automatically added.
+ * and a status indicating completion status. Timestamps are automatically added.
  */
 const goalSchema = new Schema(
   {
@@ -30,10 +30,16 @@ const goalSchema = new Schema(
       ref: 'Reward',
       default: null,
     },
-    // Indicates whether the goal has been completed (defaults to false)
-    completed: {
-      type: Boolean,
-      default: false,
+    // The progress towards achieving the goal (defaults to 0)
+    progress: {
+      type: Number,
+      default: 0,
+    },
+    // Indicates the status of the goal (defaults to 'active')
+    status: {
+      type: String,
+      enum: ['active', 'completed', 'cancelled'],
+      default: 'active',
     },
     // The ID of the user who owns this goal.
     user: {
