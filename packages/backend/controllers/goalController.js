@@ -1,4 +1,8 @@
 import * as goalService from '../services/goalService.js';
+import {
+  goalCreateSchema,
+  goalUpdateSchema,
+} from '../validators/goalValidator.js';
 
 /**
  * Creates a new goal.
@@ -6,10 +10,17 @@ import * as goalService from '../services/goalService.js';
  */
 export const createGoal = async (req, res, next) => {
   try {
-    const goalData = req.body;
-    if (!goalData.title) {
-      return res.status(400).json({ message: 'Title is required' });
+    // Validate request payload using Joi schema
+    const { error, value } = goalCreateSchema.validate(req.body, {
+      abortEarly: false,
+    });
+    if (error) {
+      return res.status(400).json({
+        message: error.details.map((detail) => detail.message).join(', '),
+      });
     }
+
+    const goalData = value;
 
     goalData.user = req.user.id;
 
@@ -74,12 +85,20 @@ export const getGoalById = async (req, res, next) => {
 export const updateGoal = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+
+    // Validate update payload; must contain at least one key
+    const { error, value } = goalUpdateSchema.validate(req.body, {
+      abortEarly: false,
+    });
+    if (error) {
+      return res.status(400).json({
+        message: error.details.map((detail) => detail.message).join(', '),
+      });
+    }
+    const updateData = value;
+
     if (!id) {
       return res.status(400).json({ message: 'Goal ID is required' });
-    }
-    if (!updateData || Object.keys(updateData).length === 0) {
-      return res.status(400).json({ message: 'Update data is required' });
     }
 
     // If a rewardOptionId is provided, use it as the reward reference.
