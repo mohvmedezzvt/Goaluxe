@@ -37,7 +37,7 @@ export function EditGoalDialog({
   });
 
   useEffect(() => {
-    const goal = goals.find((g) => g._id === goalId);
+    const goal = goals.find((g) => g.id === goalId);
     if (goal) {
       setFormData({
         title: goal.title,

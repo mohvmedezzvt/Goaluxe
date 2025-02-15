@@ -40,7 +40,7 @@ export function AddGoalDialog({ open, onOpenChange }: AddGoalDialogProps) {
         targetDate: new Date(formData.targetDate),
         progress: 0,
         status: "active",
-        _id: "",
+        id: "",
       });
       onOpenChange(false);
       setFormData({ title: "", description: "", targetDate: "" });

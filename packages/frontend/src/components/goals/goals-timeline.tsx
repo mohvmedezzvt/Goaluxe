@@ -36,7 +36,7 @@ export function GoalsTimeline({ goals }: GoalsTimelineProps) {
 
             return (
               <div
-                key={goal._id}
+                key={goal.id}
                 className={`relative mb-8 last:mb-0 ${
                   isOverdue ? "text-red-500" : ""
                 }`}

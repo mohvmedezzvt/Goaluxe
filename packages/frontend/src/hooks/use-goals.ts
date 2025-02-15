@@ -29,7 +29,7 @@ export function useGoals() {
       // TODO: Replace with actual API call
       const newGoal: Goal = {
         ...goal,
-        _id: Math.random().toString(),
+        id: Math.random().toString(),
         createdAt: new Date(),
       };
       setGoals((prev) => [...prev, newGoal]);
@@ -43,7 +43,7 @@ export function useGoals() {
     try {
       // TODO: Replace with actual API call
       setGoals((prev) =>
-        prev.map((goal) => (goal._id === id ? { ...goal, ...updates } : goal))
+        prev.map((goal) => (goal.id === id ? { ...goal, ...updates } : goal))
       );
       toast.success("Goal updated successfully");
     } catch (error) {
@@ -54,7 +54,7 @@ export function useGoals() {
   const deleteGoal = async (id: string) => {
     try {
       // TODO: Replace with actual API call
-      setGoals((prev) => prev.filter((goal) => goal._id !== id));
+      setGoals((prev) => prev.filter((goal) => goal.id !== id));
       toast.success("Goal deleted successfully");
     } catch (error) {
       toast.error("Failed to delete goal");
