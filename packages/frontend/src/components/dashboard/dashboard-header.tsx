@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import { useAuth } from "@/hooks/use-auth"
-import { Button } from "@/components/ui/button"
-import { 
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { UserCircle } from "lucide-react"
+} from "@/components/ui/dropdown-menu";
+import { UserCircle } from "lucide-react";
 
 export function DashboardHeader() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuth();
 
   return (
     <header className="h-16 border-b px-6 flex items-center justify-between">
@@ -39,5 +39,5 @@ export function DashboardHeader() {
         </DropdownMenuContent>
       </DropdownMenu>
     </header>
-  )
-} 
+  );
+}

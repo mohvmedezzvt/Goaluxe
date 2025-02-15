@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,33 +19,15 @@ import {
   validateUsername,
   isStrongPassword,
 } from "@/lib/validations";
-import type { LoginResponse, RegisterResponse } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import { setCookie } from "cookies-next";
-
-interface AuthFormProps {
-  mode: "login" | "register";
-}
-
-interface FormData {
-  username: string;
-  email: string;
-  password: string;
-}
-
-interface FormErrors {
-  username?: string;
-  email?: string;
-  password?: string;
-  general?: string;
-}
-
+import { useRouter } from "next/navigation";
 export function AuthForm({ mode }: AuthFormProps) {
-  const router = useRouter();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
+  const router = useRouter();
+
+  const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
@@ -121,11 +102,6 @@ export function AuthForm({ mode }: AuthFormProps) {
         throw new Error(response.error || "Authentication failed");
       }
 
-      // Store auth data
-      setCookie("token", response.data.token);
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-
       // Dismiss loading toast
       toast.dismiss(loadingToast);
 
@@ -140,7 +116,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       await login(response.data.user);
 
       // Navigate to dashboard
-      window.location.href = "/dashboard";
+      router.push("dashboard");
     } catch (error) {
       toast.dismiss(loadingToast);
       const errorMessage =
