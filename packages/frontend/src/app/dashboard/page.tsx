@@ -58,8 +58,6 @@ export default function DashboardPage() {
     ? goals.reduce((acc, goal) => acc + goal.progress, 0) / goals.length
     : 0;
 
-  console.log(averageProgress);
-
   const handleDeleteGoal = async () => {
     if (deletingGoal) {
       await deleteGoal(deletingGoal);
