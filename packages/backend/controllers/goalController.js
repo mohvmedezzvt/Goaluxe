@@ -141,10 +141,12 @@ export const deleteGoal = async (req, res, next) => {
     if (!goal) {
       return res.status(404).json({ message: 'Goal not found' });
     }
-    if (goal.user.toString() !== req.user.id) {
-      return res.status(403).json({
-        message: 'Forbidden: You cannot delete a goal that is not yours',
-      });
+    if (!goal.user || goal.user.toString() !== req.user.id) {
+      return res
+        .status(403)
+        .json({
+          message: 'Forbidden: You cannot delete a goal that is not yours',
+        });
     }
 
     await goalService.deleteGoal(id);
