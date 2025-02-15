@@ -15,8 +15,8 @@ export const createGoal = async (data) => {
  * Retrieves all goals from the database.
  * @returns {Promise<Array>} - An array of goal documents.
  */
-export const getGoals = async () => {
-  const goals = await Goal.find({});
+export const getGoals = async (userId) => {
+  const goals = await Goal.find({ user: userId });
   return goals;
 };
 
