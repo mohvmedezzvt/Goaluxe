@@ -54,4 +54,16 @@ const goalSchema = new Schema(
   }
 );
 
+// Automatically remove the `user` field when converting to JSON
+goalSchema.set('toJSON', {
+  virtuals: true,
+  transform: (doc, ret) => {
+    ret.id = ret._id; // add a new 'id' field with the value of _id
+    delete ret._id; // Remove the _id field
+    delete ret.__v; // Remove the __v field
+    delete ret.user; // Remove the user field
+    return ret;
+  },
+});
+
 export default mongoose.model('Goal', goalSchema);

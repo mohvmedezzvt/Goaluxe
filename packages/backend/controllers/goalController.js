@@ -1,4 +1,8 @@
 import * as goalService from '../services/goalService.js';
+import {
+  goalCreateSchema,
+  goalUpdateSchema,
+} from '../validators/goalValidator.js';
 
 /**
  * Creates a new goal.
@@ -6,10 +10,17 @@ import * as goalService from '../services/goalService.js';
  */
 export const createGoal = async (req, res, next) => {
   try {
-    const goalData = req.body;
-    if (!goalData.title) {
-      return res.status(400).json({ message: 'Title is required' });
+    // Validate request payload using Joi schema
+    const { error, value } = goalCreateSchema.validate(req.body, {
+      abortEarly: false,
+    });
+    if (error) {
+      return res.status(400).json({
+        message: error.details.map((detail) => detail.message).join(', '),
+      });
     }
+
+    const goalData = value;
 
     goalData.user = req.user.id;
 
@@ -32,7 +43,8 @@ export const createGoal = async (req, res, next) => {
  */
 export const getGoals = async (req, res, next) => {
   try {
-    const goals = await goalService.getGoals();
+    const userId = req.user.id;
+    const goals = await goalService.getGoals(userId);
     res.status(200).json(goals);
   } catch (error) {
     next(error);
@@ -55,7 +67,7 @@ export const getGoalById = async (req, res, next) => {
       return res.status(404).json({ message: 'Goal not found' });
     }
 
-    if (goal.user.toString() !== req.user.id) {
+    if (!goal.user || goal.user.toString() !== req.user.id) {
       return res
         .status(403)
         .json({ message: 'Forbidden: You do not have accesss to this goal' });
@@ -74,12 +86,20 @@ export const getGoalById = async (req, res, next) => {
 export const updateGoal = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+
+    // Validate update payload; must contain at least one key
+    const { error, value } = goalUpdateSchema.validate(req.body, {
+      abortEarly: false,
+    });
+    if (error) {
+      return res.status(400).json({
+        message: error.details.map((detail) => detail.message).join(', '),
+      });
+    }
+    const updateData = value;
+
     if (!id) {
       return res.status(400).json({ message: 'Goal ID is required' });
-    }
-    if (!updateData || Object.keys(updateData).length === 0) {
-      return res.status(400).json({ message: 'Update data is required' });
     }
 
     // If a rewardOptionId is provided, use it as the reward reference.
@@ -92,7 +112,7 @@ export const updateGoal = async (req, res, next) => {
     if (!goal) {
       return res.status(404).json({ message: 'Goal not found' });
     }
-    if (goal.user.toString() !== req.user.id) {
+    if (!goal.user || goal.user.toString() !== req.user.id) {
       return res.status(403).json({
         message: 'Forbidden: You cannot update a goal that is not yours',
       });
@@ -122,7 +142,7 @@ export const deleteGoal = async (req, res, next) => {
     if (!goal) {
       return res.status(404).json({ message: 'Goal not found' });
     }
-    if (goal.user.toString() !== req.user.id) {
+    if (!goal.user || goal.user.toString() !== req.user.id) {
       return res.status(403).json({
         message: 'Forbidden: You cannot delete a goal that is not yours',
       });
