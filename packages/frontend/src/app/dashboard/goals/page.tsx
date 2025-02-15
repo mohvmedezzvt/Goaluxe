@@ -31,7 +31,7 @@ export default function GoalsPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {goals.map((goal) => (
-          <Card key={goal._id}>
+          <Card key={goal.id}>
             <CardHeader className="flex flex-row items-start justify-between space-y-0">
               <CardTitle className="text-base font-medium">
                 {goal.title}
@@ -40,7 +40,7 @@ export default function GoalsPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setEditingGoal(goal._id)}
+                  onClick={() => setEditingGoal(goal.id)}
                 >
                   <Pencil className="w-4 h-4" />
                 </Button>
