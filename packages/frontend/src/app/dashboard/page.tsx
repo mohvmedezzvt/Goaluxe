@@ -122,8 +122,8 @@ export default function DashboardPage() {
         ].map((stat, i) => (
           <Card key={i} className="hover:shadow-md transition-all">
             <CardContent className="p-4 sm:pt-6">
-              <div className="flex items-center gap-3">
-                <div className={cn("p-2 rounded-lg", stat.bgColor)}>
+              <div className="flex  gap-3">
+                <div className={cn("h-fit p-2 rounded-lg", stat.bgColor)}>
                   {stat.icon}
                 </div>
                 <div>
