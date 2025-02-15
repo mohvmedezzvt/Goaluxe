@@ -1,18 +1,21 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Goal } from "@/types"
-import { CalendarDays, Circle } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { CalendarDays, Circle } from "lucide-react";
 
 interface GoalsTimelineProps {
-  goals: Goal[]
+  goals: Goal[];
 }
 
 export function GoalsTimeline({ goals }: GoalsTimelineProps) {
   const sortedGoals = [...goals]
-    .filter(goal => goal.status === 'active')
-    .sort((a, b) => new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime())
-    .slice(0, 5) // Show only next 5 upcoming goals
+    .filter((goal) => goal.status === "active")
+    .sort(
+      (a, b) =>
+        new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime()
+    )
+    .slice(0, 5); // Show only next 5 upcoming goals
 
   return (
     <Card>
@@ -26,15 +29,16 @@ export function GoalsTimeline({ goals }: GoalsTimelineProps) {
         <div className="relative pl-6 border-l">
           {sortedGoals.map((goal, index) => {
             const daysLeft = Math.ceil(
-              (new Date(goal.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-            )
-            const isOverdue = daysLeft < 0
+              (new Date(goal.targetDate).getTime() - new Date().getTime()) /
+                (1000 * 60 * 60 * 24)
+            );
+            const isOverdue = daysLeft < 0;
 
             return (
               <div
-                key={goal.id}
+                key={goal._id}
                 className={`relative mb-8 last:mb-0 ${
-                  isOverdue ? 'text-red-500' : ''
+                  isOverdue ? "text-red-500" : ""
                 }`}
               >
                 <Circle className="absolute -left-[1.6rem] w-4 h-4 mt-1.5 fill-background" />
@@ -48,12 +52,12 @@ export function GoalsTimeline({ goals }: GoalsTimelineProps) {
                   <div className="text-sm text-muted-foreground">
                     Due {new Date(goal.targetDate).toLocaleDateString()}
                     <span className="ml-2">
-                      ({isOverdue ? 'Overdue' : `${daysLeft} days left`})
+                      ({isOverdue ? "Overdue" : `${daysLeft} days left`})
                     </span>
                   </div>
                 </div>
               </div>
-            )
+            );
           })}
 
           {sortedGoals.length === 0 && (
@@ -64,5 +68,5 @@ export function GoalsTimeline({ goals }: GoalsTimelineProps) {
         </div>
       </CardContent>
     </Card>
-  )
-} 
+  );
+}
