@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { auth } from "@/lib/api";
 import { toast } from "sonner";
-import { deleteCookie } from "cookies-next";
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
