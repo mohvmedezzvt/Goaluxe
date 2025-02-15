@@ -43,7 +43,8 @@ export const createGoal = async (req, res, next) => {
  */
 export const getGoals = async (req, res, next) => {
   try {
-    const goals = await goalService.getGoals();
+    const userId = req.user.id;
+    const goals = await goalService.getGoals(userId);
     res.status(200).json(goals);
   } catch (error) {
     next(error);
@@ -66,7 +67,7 @@ export const getGoalById = async (req, res, next) => {
       return res.status(404).json({ message: 'Goal not found' });
     }
 
-    if (goal.user.toString() !== req.user.id) {
+    if (!goal.user || goal.user.toString() !== req.user.id) {
       return res
         .status(403)
         .json({ message: 'Forbidden: You do not have accesss to this goal' });
@@ -111,7 +112,7 @@ export const updateGoal = async (req, res, next) => {
     if (!goal) {
       return res.status(404).json({ message: 'Goal not found' });
     }
-    if (goal.user.toString() !== req.user.id) {
+    if (!goal.user || goal.user.toString() !== req.user.id) {
       return res.status(403).json({
         message: 'Forbidden: You cannot update a goal that is not yours',
       });
@@ -142,11 +143,9 @@ export const deleteGoal = async (req, res, next) => {
       return res.status(404).json({ message: 'Goal not found' });
     }
     if (!goal.user || goal.user.toString() !== req.user.id) {
-      return res
-        .status(403)
-        .json({
-          message: 'Forbidden: You cannot delete a goal that is not yours',
-        });
+      return res.status(403).json({
+        message: 'Forbidden: You cannot delete a goal that is not yours',
+      });
     }
 
     await goalService.deleteGoal(id);
