@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useGoals } from "@/hooks/use-goals";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Pencil, Trash2 } from "lucide-react";
@@ -9,13 +8,19 @@ import { Progress } from "@/components/ui/progress";
 import { AddGoalDialog } from "@/components/goals/add-goal-dialog";
 import { EditGoalDialog } from "@/components/goals/edit-goal-dialog";
 import { Loading } from "@/components/ui/loading";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 export default function GoalsPage() {
-  const { goals, loading } = useGoals();
+  const { data: response, isPending } = useQuery({
+    queryKey: ["Goals"],
+    queryFn: () => api.get<Goal[]>("/goals"),
+  });
+  const goals = response?.data;
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingGoal, setEditingGoal] = useState<string | null>(null);
 
-  if (loading) {
+  if (isPending) {
     return <Loading />;
   }
 
@@ -30,7 +35,7 @@ export default function GoalsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {goals.map((goal) => (
+        {goals?.map((goal: Goal) => (
           <Card key={goal.id}>
             <CardHeader className="flex flex-row items-start justify-between space-y-0">
               <CardTitle className="text-base font-medium">
@@ -66,7 +71,7 @@ export default function GoalsPage() {
               </div>
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>
-                  Target: {new Date(goal.targetDate).toLocaleDateString()}
+                  Target: {new Date(goal.dueDate).toLocaleDateString()}
                 </span>
                 <span className="capitalize">{goal.status}</span>
               </div>

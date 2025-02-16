@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useGoals } from "@/hooks/use-goals";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,9 +17,9 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { AddGoalDialog } from "@/components/goals/add-goal-dialog";
 import { EditGoalDialog } from "@/components/goals/edit-goal-dialog";
-import { Loading } from "@/components/ui/loading";
 import { GoalsFilters } from "@/components/goals/goals-filters";
 import { motion, AnimatePresence } from "framer-motion";
+import { Pagination } from "@heroui/pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,36 +33,67 @@ import {
 import { cn } from "@/lib/utils";
 import useEdit from "@/stores/useEdit";
 import GoalOverViewCard from "@/components/goals/goal-overview-card";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { useSearchParams } from "next/navigation";
+import useDelete from "@/stores/useDelete";
+import { GoalsLoading } from "@/components/goals/goals-loading";
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { goals, loading, deleteGoal } = useGoals();
+  const searchParams = useSearchParams();
+  const title = searchParams.get("title") || undefined;
+
+  const { data: response, isPending } = useQuery({
+    queryKey: ["Goals", title],
+    queryFn: () =>
+      api.get<Goal[]>(`/goals?title=${encodeURIComponent(title ?? "")}`),
+    placeholderData: keepPreviousData,
+    retry: 10,
+    retryDelay: 2000,
+  });
+
+  const { isDeleting, setDelete } = useDelete();
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationKey: [`Goal-delete-${isDeleting}`],
+    mutationFn: async (deletingGoal: string) => {
+      return await api.delete(`goals/${deletingGoal}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["Goals"] });
+    },
+  });
+
   const [showAddDialog, setShowAddDialog] = useState(false);
+
   const { isEditing, setEdit } = useEdit();
-  const [deletingGoal, setDeletingGoal] = useState<string | null>(null);
-  const [filteredGoals, setFilteredGoals] = useState(goals);
 
-  console.log(goals);
-  useEffect(() => {
-    setFilteredGoals(goals);
-  }, [goals]);
+  const goals = response?.data || [];
 
-  if (loading) {
-    return <Loading />;
-  }
+  const activeGoals = goals?.filter((goal) => goal.status === "active") || [];
 
-  const activeGoals = goals.filter((goal) => goal.status === "active");
-  const completedGoals = goals.filter((goal) => goal.status === "completed");
-  const averageProgress = Number.isNaN(goals.length)
-    ? goals.reduce((acc, goal) => acc + goal.progress, 0) / goals.length
-    : 0;
+  const completedGoals =
+    goals?.filter((goal) => goal.status === "completed") || [];
+
+  const averageProgress =
+    goals && goals.length > 0
+      ? goals.reduce((acc, goal) => acc + goal.progress, 0) / goals.length
+      : 0;
 
   const handleDeleteGoal = async () => {
-    if (deletingGoal) {
-      await deleteGoal(deletingGoal);
-      setDeletingGoal(null);
+    if (isDeleting) {
+      mutation.mutate(isDeleting);
+      setDelete(null);
     }
   };
+
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500">
       {/* Header Section - Improved mobile layout */}
@@ -112,7 +142,7 @@ export default function DashboardPage() {
             label: "Due Soon",
             value: activeGoals.filter((g) => {
               const daysLeft = Math.ceil(
-                (new Date(g.targetDate).getTime() - new Date().getTime()) /
+                (new Date(g.dueDate).getTime() - new Date().getTime()) /
                   (1000 * 60 * 60 * 24)
               );
               return daysLeft <= 7 && daysLeft > 0;
@@ -137,53 +167,49 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
-
       {/* Main Content Grid - Responsive layout */}
       <div className="grid gap-6 lg:grid-cols-6">
         {/* Goals List Section */}
-        <div className="lg:col-span-4 space-y-6">
-          <Card>
+        <div className="lg:col-span-4 space-y-6 flex flex-col items-center">
+          <Card className="w-full">
             <CardHeader className="space-y-4 sm:space-y-0">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle>Goals Overview</CardTitle>
-                <GoalsFilters
-                  goals={goals}
-                  onFilterChange={setFilteredGoals}
-                  onSortChange={setFilteredGoals}
-                />
+                <GoalsFilters />
               </div>
             </CardHeader>
             <CardContent>
               <AnimatePresence mode="popLayout">
-                <div className="space-y-4">
-                  {filteredGoals.map(
-                    (
-                      {
+                <div className="space-y-4  max-h-[calc(100vh-32.5rem)] overflow-y-auto">
+                  {!isPending ? (
+                    goals.map(
+                      ({
                         title,
                         description,
                         createdAt,
                         id,
                         status,
-                        targetDate,
+                        dueDate,
                         progress,
-                      },
-                      index
-                    ) => (
-                      <GoalOverViewCard
-                        key={index}
-                        title={title}
-                        description={description}
-                        createdAt={createdAt}
-                        id={id}
-                        status={status}
-                        targetDate={targetDate}
-                        progress={progress}
-                      />
+                      }) => (
+                        <GoalOverViewCard
+                          key={id}
+                          title={title}
+                          description={description}
+                          createdAt={createdAt}
+                          id={id}
+                          status={status}
+                          dueDate={dueDate}
+                          progress={progress}
+                        />
+                      )
                     )
+                  ) : (
+                    <GoalsLoading />
                   )}
 
                   {/* Empty States - Centered on mobile */}
-                  {filteredGoals.length === 0 && goals.length > 0 && (
+                  {title && goals?.length == 0 && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -200,7 +226,7 @@ export default function DashboardPage() {
                     </motion.div>
                   )}
 
-                  {goals.length === 0 && (
+                  {!isPending && !title && goals.length === 0 && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -225,6 +251,11 @@ export default function DashboardPage() {
               </AnimatePresence>
             </CardContent>
           </Card>
+          <Pagination
+            className="bg-default-200 rounded-2xl"
+            total={10}
+            initialPage={1}
+          />
         </div>
 
         {/* Sidebar - Horizontal scroll on mobile */}
@@ -275,22 +306,19 @@ export default function DashboardPage() {
                 {activeGoals
                   .sort(
                     (a, b) =>
-                      new Date(a.targetDate).getTime() -
-                      new Date(b.targetDate).getTime()
+                      new Date(a.dueDate).getTime() -
+                      new Date(b.dueDate).getTime()
                   )
                   .slice(0, 3)
-                  .map((goal, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-center"
-                    >
+                  .map(({ title, id, dueDate, progress }) => (
+                    <div key={id} className="flex justify-between items-center">
                       <div>
-                        <p className="font-medium">{goal.title}</p>
+                        <p className="font-medium">{title}</p>
                         <p className="text-sm text-muted-foreground">
-                          Due {new Date(goal.targetDate).toLocaleDateString()}
+                          Due {new Date(dueDate).toLocaleDateString()}
                         </p>
                       </div>
-                      <Progress value={goal.progress} className="w-20 h-2" />
+                      <Progress value={progress} className="w-20 h-2" />
                     </div>
                   ))}
                 {activeGoals.length === 0 && (
@@ -315,10 +343,7 @@ export default function DashboardPage() {
         />
       )}
 
-      <AlertDialog
-        open={!!deletingGoal}
-        onOpenChange={() => setDeletingGoal(null)}
-      >
+      <AlertDialog open={!!isDeleting} onOpenChange={() => setDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
