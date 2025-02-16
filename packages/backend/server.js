@@ -25,13 +25,30 @@ app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // limit each IP to 100 requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
   })
 );
 
-app.use(cors());
+app.use(
+  cors({
+    origin: '*', // use process.env.CLIENT_URL || '*'
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    optionsSuccessStatus: 204,
+  })
+);
+
 app.use(express.json());
 app.use(morgan('dev'));
 app.use(mongoSanitize());
+
+// Additional Header to Control Referrer Policy
+app.use((req, res, next) => {
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
