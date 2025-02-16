@@ -12,5 +12,8 @@
     "@nrwl/cli": "^15.9.3",
     "@nrwl/workspace": "^19.8.4",
     "lerna": "^8.1.9"
+  },
+  "dependencies": {
+    "concurrently": "^9.1.2"
   }
 }
