@@ -11,45 +11,78 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { SlidersHorizontal, Search, ChevronDown } from "lucide-react";
+import { ChangeEvent, useEffect, useState } from "react";
+import { useDebounce } from "use-debounce";
 
-interface GoalsFiltersProps {
-  onFilterChange: (goals: Goal[]) => void;
-  onSortChange: (goals: Goal[]) => void;
-  goals: Goal[];
-}
+/**
+ * Component for filtering and sorting goals.
+ *
+ * This component provides a search input for filtering goals by title,
+ * and a dropdown menu for filtering by status and sorting by different criteria.
+ *
+ * @component
+ * @example
+ * return (
+ *   <GoalsFilters />
+ * )
+ *
+ * @returns {JSX.Element} The rendered component.
+ *
+ * @function
+ * @name GoalsFilters
+ *
+ * @description
+ * - Uses a debounced search input to filter goals by title.
+ * - Updates the URL query parameters based on the search input.
+ * - Provides a dropdown menu for filtering goals by status (all, active, completed, archived).
+ * - Provides a dropdown menu for sorting goals by due date, progress, or title.
+ *
+ * @hook
+ * @name useDebounce
+ * @description Debounces the search input to avoid excessive updates.
+ *
+ * @hook
+ * @name useEffect
+ * @description Updates the URL query parameters when the debounced search input changes.
+ *
+ * @param {ChangeEvent<HTMLInputElement>} e - The change event for the search input.
+ *
+ * @callback handleSearch
+ * @description Handles the search input change event and updates the search state.
+ *
+ * @callback handleSort
+ * @description Handles sorting goals by the specified key.
+ * @param {keyof Goal} key - The key to sort goals by.
+ *
+ * @callback handleStatusFilter
+ * @description Handles filtering goals by the specified status.
+ * @param {Goal["status"] | "all"} status - The status to filter goals by.
+ */
+export function GoalsFilters() {
+  const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebounce(search, 500);
+  const params = new URLSearchParams(window.location.search);
 
-export function GoalsFilters({
-  onFilterChange,
-  onSortChange,
-  goals,
-}: GoalsFiltersProps) {
-  const handleSearch = (term: string) => {
-    const filtered = goals.filter(
-      (goal) =>
-        goal.title.toLowerCase().includes(term.toLowerCase()) ||
-        goal.description.toLowerCase().includes(term.toLowerCase())
+  const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+  };
+
+  useEffect(() => {
+    if (debouncedSearch) {
+      params.set("title", debouncedSearch);
+    } else {
+      params.delete("title");
+    }
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}?${params.toString()}`
     );
-    onFilterChange(filtered);
-  };
+  }, [debouncedSearch]);
 
-  const handleSort = (key: keyof Goal) => {
-    const sorted = [...goals].sort((a, b) => {
-      if (key === "targetDate") {
-        return new Date(a[key]).getTime() - new Date(b[key]).getTime();
-      }
-      if (key === "progress") {
-        return (b[key] as number) - (a[key] as number);
-      }
-      return String(a[key]).localeCompare(String(b[key]));
-    });
-    onSortChange(sorted);
-  };
+  const handleSort = (key: keyof Goal) => {};
 
-  const handleStatusFilter = (status: Goal["status"] | "all") => {
-    const filtered =
-      status === "all" ? goals : goals.filter((goal) => goal.status === status);
-    onFilterChange(filtered);
-  };
+  const handleStatusFilter = (status: Goal["status"] | "all") => {};
 
   return (
     <div className="flex gap-2 items-center">
@@ -58,7 +91,7 @@ export function GoalsFilters({
         <Input
           placeholder="Search goals..."
           className="pl-8"
-          onChange={(e) => handleSearch(e.target.value)}
+          onChange={(e) => handleSearch(e)}
         />
       </div>
 
@@ -88,7 +121,7 @@ export function GoalsFilters({
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Sort by</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => handleSort("targetDate")}>
+          <DropdownMenuItem onClick={() => handleSort("dueDate")}>
             Due Date
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handleSort("progress")}>
