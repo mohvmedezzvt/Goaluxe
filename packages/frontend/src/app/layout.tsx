@@ -18,12 +18,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={cn(inter.className, "overflow-y-hidden")}
-        suppressHydrationWarning
-      >
+      <body className={cn(inter.className)} suppressHydrationWarning>
         <QueryClientProvider>
-          <div id="app" className="overflow-y-hidden" suppressHydrationWarning>
+          <div id="app" suppressHydrationWarning>
             <ToastProvider />
             <main className="min-h-screen bg-background ">{children}</main>
           </div>
