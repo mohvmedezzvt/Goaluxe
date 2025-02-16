@@ -1,8 +1,4 @@
 import * as goalService from '../services/goalService.js';
-import {
-  goalCreateSchema,
-  goalUpdateSchema,
-} from '../validators/goalValidator.js';
 
 /**
  * Creates a new goal.
@@ -10,18 +6,7 @@ import {
  */
 export const createGoal = async (req, res, next) => {
   try {
-    // Validate request payload using Joi schema
-    const { error, value } = goalCreateSchema.validate(req.body, {
-      abortEarly: false,
-    });
-    if (error) {
-      return res.status(400).json({
-        message: error.details.map((detail) => detail.message).join(', '),
-      });
-    }
-
-    const goalData = value;
-
+    const goalData = req.body;
     goalData.user = req.user.id;
 
     if (goalData.rewardOptionId) {
@@ -86,21 +71,11 @@ export const getGoalById = async (req, res, next) => {
 export const updateGoal = async (req, res, next) => {
   try {
     const { id } = req.params;
-
-    // Validate update payload; must contain at least one key
-    const { error, value } = goalUpdateSchema.validate(req.body, {
-      abortEarly: false,
-    });
-    if (error) {
-      return res.status(400).json({
-        message: error.details.map((detail) => detail.message).join(', '),
-      });
-    }
-    const updateData = value;
-
     if (!id) {
       return res.status(400).json({ message: 'Goal ID is required' });
     }
+
+    const updateData = req.body;
 
     // If a rewardOptionId is provided, use it as the reward reference.
     if (updateData.rewardOptionId) {
