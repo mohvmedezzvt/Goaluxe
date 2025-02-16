@@ -113,3 +113,26 @@ export const refreshToken = async (req, res, next) => {
     next(error);
   }
 };
+
+// In-memory blacklist (use Redis for production)
+export const tokenBlacklist = new Set();
+
+export const logout = (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(204).send(); // No content, already logged out
+  }
+
+  // Add token to blacklist
+  tokenBlacklist.add(refreshToken);
+
+  // Clear HTTP-only cookie
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'Strict',
+  });
+
+  return res.status(200).json({ message: 'Logged out successfully' });
+};
