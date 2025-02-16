@@ -2,10 +2,12 @@
 import express from 'express';
 import * as rewardController from '../controllers/rewardController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
+import { checkBlacklist } from '../middleware/checkBlacklist.js';
 
 const router = express.Router();
 
 router.use(authMiddleware);
+router.use(checkBlacklist);
 
 // GET: Retrieve all available reward options (public rewards plus those created by the user)
 router.get('/', rewardController.listRewardOptions);
