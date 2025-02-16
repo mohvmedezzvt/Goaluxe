@@ -44,11 +44,64 @@ import { useSearchParams } from "next/navigation";
 import useDelete from "@/stores/useDelete";
 import { GoalsLoading } from "@/components/goals/goals-loading";
 
+/**
+ * DashboardPage component is the main dashboard view for the application.
+ * It displays an overview of the user's goals, including active, completed, and upcoming goals.
+ * It also provides functionalities to add, edit, and delete goals.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered DashboardPage component.
+ *
+ * @example
+ * ```tsx
+ * import DashboardPage from './path/to/DashboardPage';
+ *
+ * function App() {
+ *   return <DashboardPage />;
+ * }
+ * ```
+ *
+ * @remarks
+ * This component uses several hooks and components from the application:
+ * - `useAuth` to get the current user.
+ * - `useSearchParams` to get query parameters from the URL.
+ * - `useQuery` to fetch goals data from the API.
+ * - `useDelete` and `useMutation` to handle goal deletion.
+ * - `useEdit` to manage goal editing state.
+ * - `useState` to manage local state for dialogs.
+ * - `useQueryClient` to manage query caching and invalidation.
+ *
+ * The component is divided into several sections:
+ * - Header Section: Displays a welcome message and a button to add a new goal.
+ * - Quick Stats: Shows quick statistics about active goals, completed goals, overall progress, and upcoming deadlines.
+ * - Main Content Grid: Contains the goals list and a sidebar with progress overview and upcoming deadlines.
+ * - Dialogs: Includes dialogs for adding, editing, and deleting goals.
+ *
+ * @hook
+ * @function useAuth
+ * @function useSearchParams
+ * @function useQuery
+ * @function useDelete
+ * @function useMutation
+ * @function useEdit
+ * @function useState
+ * @function useQueryClient
+ *
+ * @typedef {Object} Goal
+ * @property {string} id - The unique identifier of the goal.
+ * @property {string} title - The title of the goal.
+ * @property {string} description - The description of the goal.
+ * @property {string} status - The status of the goal (e.g., "active", "completed").
+ * @property {Date} createdAt - The creation date of the goal.
+ * @property {Date} dueDate - The due date of the goal.
+ * @property {number} progress - The progress percentage of the goal.
+ */
 export default function DashboardPage() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const title = searchParams.get("title") || undefined;
 
+  const queryClient = useQueryClient();
   const { data: response, isPending } = useQuery({
     queryKey: ["Goals", title],
     queryFn: () =>
@@ -59,7 +112,8 @@ export default function DashboardPage() {
   });
 
   const { isDeleting, setDelete } = useDelete();
-  const queryClient = useQueryClient();
+  const { isEditing, setEdit } = useEdit();
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const mutation = useMutation({
     mutationKey: [`Goal-delete-${isDeleting}`],
@@ -71,19 +125,11 @@ export default function DashboardPage() {
     },
   });
 
-  const [showAddDialog, setShowAddDialog] = useState(false);
-
-  const { isEditing, setEdit } = useEdit();
-
   const goals = response?.data || [];
-
-  const activeGoals = goals?.filter((goal) => goal.status === "active") || [];
-
-  const completedGoals =
-    goals?.filter((goal) => goal.status === "completed") || [];
-
+  const activeGoals = goals.filter((goal) => goal.status === "active");
+  const completedGoals = goals.filter((goal) => goal.status === "completed");
   const averageProgress =
-    goals && goals.length > 0
+    goals.length > 0
       ? goals.reduce((acc, goal) => acc + goal.progress, 0) / goals.length
       : 0;
 
@@ -343,7 +389,10 @@ export default function DashboardPage() {
         />
       )}
 
-      <AlertDialog open={!!isDeleting} onOpenChange={() => setDelete(null)}>
+      <AlertDialog
+        open={!!isDeleting && !mutation.isPending}
+        onOpenChange={() => setDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
