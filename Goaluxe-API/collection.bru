@@ -5,3 +5,7 @@ meta {
 auth {
   mode: none
 }
+
+vars:pre-request {
+  access_token: {{process.env.JWT_TOKEN}}
+}
