@@ -9,7 +9,7 @@ interface Goal {
   id: string;
   title: string;
   description: string;
-  targetDate: Date;
+  dueDate: Date;
   progress: number;
   status: "active" | "completed" | "archived";
   createdAt: Date;
