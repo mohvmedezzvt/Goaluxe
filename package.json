@@ -6,7 +6,8 @@
   ],
   "scripts": {
     "start": "lerna run start --scope=backend",
-    "dev": "lerna run dev --scope=frontend"
+    "dev": "lerna run dev --scope=frontend",
+    "lint": "pnpm -r run lint"
   },
   "devDependencies": {
     "@nrwl/cli": "^15.9.3",

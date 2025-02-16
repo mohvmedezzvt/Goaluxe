@@ -19,7 +19,7 @@ const JWT_EXPIRES_IN = '1d';
  * @throws {Error} - Throws an error if required fields are missing or if a user already exists.
  */
 export const registerUser = async (userData) => {
-  const { username, email, password, role } = userData;
+  const { username, email, password } = userData;
 
   // Validate required fields.
   if (!username || !email || !password) {
