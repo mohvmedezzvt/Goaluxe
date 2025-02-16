@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useGoals } from "@/hooks/use-goals";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,39 +13,104 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 interface AddGoalDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * AddGoalDialog component allows users to add a new goal.
+ * @param {boolean} open - Determines if the dialog is open.
+ * @param {function} onOpenChange - Function to handle the dialog open state change.
+ */
+/**
+ * Component for adding a new goal through a dialog interface.
+ *
+ * @component
+ * @param {Object} props - The component props.
+ * @param {boolean} props.open - Determines if the dialog is open.
+ * @param {function} props.onOpenChange - Callback function to handle dialog open state change.
+ * @returns {JSX.Element} The rendered AddGoalDialog component.
+ *
+ * @example
+ * <AddGoalDialog open={isOpen} onOpenChange={setIsOpen} />
+ *
+ * @typedef {Object} AddGoalDialogProps
+ * @property {boolean} open - Determines if the dialog is open.
+ * @property {function} onOpenChange - Callback function to handle dialog open state change.
+ *
+ * @remarks
+ * This component uses React Query's `useMutation` to handle the goal creation process.
+ * It also uses local state to manage form data.
+ *
+ * @function handleSubmit
+ * Handles form submission.
+ * @param {React.FormEvent} e - The form event.
+ *
+ * @function setFormData
+ * Updates the form data state.
+ * @param {Object} prev - The previous state.
+ * @param {string} prev.title - The title of the goal.
+ * @param {string} prev.description - The description of the goal.
+ * @param {string} prev.dueDate - The target date for the goal.
+ *
+ * @function mutate
+ * Executes the mutation function to create a new goal.
+ * @param {Object} formData - The form data.
+ * @param {string} formData.title - The title of the goal.
+ * @param {string} formData.description - The description of the goal.
+ * @param {string} formData.dueDate - The target date for the goal.
+ *
+ * @function queryClient.invalidateQueries
+ * Invalidates the queries with the key "Goals" to refresh the goal list.
+ *
+ * @function onOpenChange
+ * Callback function to handle dialog open state change.
+ *
+ * @function setFormData
+ * Updates the form data state.
+ * @param {Object} prev - The previous state.
+ * @param {string} prev.title - The title of the goal.
+ * @param {string} prev.description - The description of the goal.
+ * @param {string} prev.dueDate - The target date for the goal.
+ */
 export function AddGoalDialog({ open, onOpenChange }: AddGoalDialogProps) {
-  const { addGoal } = useGoals();
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    targetDate: "",
+    dueDate: "",
   });
 
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (formData: {
+      title: string;
+      description: string;
+      dueDate: string;
+    }) => {
+      return await api.post("/goals", formData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["Goals"] });
+    },
+  });
+
+  /**
+   * Handles form submission.
+   * @param {React.FormEvent} e - The form event.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
     try {
-      await addGoal({
-        title: formData.title,
-        description: formData.description,
-        targetDate: new Date(formData.targetDate),
-        progress: 0,
-        status: "active",
-        id: "",
-      });
-      onOpenChange(false);
-      setFormData({ title: "", description: "", targetDate: "" });
+      mutate(formData);
     } finally {
-      setLoading(false);
+      setFormData({ title: "", description: "", dueDate: "" });
     }
+    onOpenChange(false);
   };
 
   return (
@@ -88,15 +152,15 @@ export function AddGoalDialog({ open, onOpenChange }: AddGoalDialogProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="targetDate">Target Date</Label>
+              <Label htmlFor="dueDate">Target Date</Label>
               <Input
-                id="targetDate"
+                id="dueDate"
                 type="date"
-                value={formData.targetDate}
+                value={formData.dueDate}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    targetDate: e.target.value,
+                    dueDate: e.target.value,
                   }))
                 }
                 required
@@ -108,12 +172,12 @@ export function AddGoalDialog({ open, onOpenChange }: AddGoalDialogProps) {
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={loading}
+              disabled={isPending}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Adding..." : "Add Goal"}
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Adding..." : "Add Goal"}
             </Button>
           </DialogFooter>
         </form>

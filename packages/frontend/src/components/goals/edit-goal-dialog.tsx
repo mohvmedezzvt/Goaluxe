@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useGoals } from "@/hooks/use-goals";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +13,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 interface EditGoalDialogProps {
   goalId: string;
@@ -21,56 +22,109 @@ interface EditGoalDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * EditGoalDialog component allows users to edit the details of a specific goal.
+ *
+ * @param {Object} props - The properties object.
+ * @param {string} props.goalId - The ID of the goal to be edited.
+ * @param {boolean} props.open - A boolean indicating whether the dialog is open.
+ * @param {function} props.onOpenChange - A callback function to handle the change in dialog open state.
+ *
+ * @returns {JSX.Element} The rendered EditGoalDialog component.
+ *
+ * @component
+ * @example
+ * const goalId = "123";
+ * const [open, setOpen] = useState(false);
+ *
+ * <EditGoalDialog
+ *   goalId={goalId}
+ *   open={open}
+ *   onOpenChange={setOpen}
+ * />
+ */
+/**
+ * Component for editing a goal in a dialog.
+ *
+ * @component
+ * @param {Object} props - The component props.
+ * @param {string} props.goalId - The ID of the goal to be edited.
+ * @param {boolean} props.open - Boolean indicating whether the dialog is open.
+ * @param {function} props.onOpenChange - Callback function to handle the dialog open state change.
+ *
+ * @typedef {Object} EditGoalDialogProps
+ * @property {string} goalId - The ID of the goal to be edited.
+ * @property {boolean} open - Boolean indicating whether the dialog is open.
+ * @property {function} onOpenChange - Callback function to handle the dialog open state change.
+ *
+ * @returns {JSX.Element} The rendered EditGoalDialog component.
+ *
+ * @example
+ * <EditGoalDialog
+ *   goalId="123"
+ *   open={isOpen}
+ *   onOpenChange={setIsOpen}
+ * />
+ */
 export function EditGoalDialog({
   goalId,
   open,
   onOpenChange,
 }: EditGoalDialogProps) {
-  const { goals, updateGoal } = useGoals();
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending } = useMutation({
+    mutationKey: ["Goal", goalId],
+    mutationFn: async () => {
+      return await api.put(`goals/${goalId}`, formData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["Goals"] });
+      queryClient.invalidateQueries({ queryKey: ["Goal", goalId] });
+    },
+  });
+
+  const { data: goal } = useQuery({
+    queryKey: ["Goal", goalId],
+    queryFn: async (): Promise<Goal> => {
+      const response = await api.get(`goals/${goalId}`);
+      return response.data as Goal;
+    },
+  });
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    targetDate: "",
+    dueDate: "",
     progress: 0,
     status: "active" as Goal["status"],
   });
 
   useEffect(() => {
-    const goal = goals.find((g) => g.id === goalId);
     if (goal) {
       setFormData({
         title: goal.title,
         description: goal.description,
-        targetDate: new Date(goal.targetDate).toISOString().split("T")[0],
+        dueDate: new Date(goal.dueDate).toISOString().split("T")[0],
         progress: goal.progress,
         status: goal.status,
       });
     }
-  }, [goalId, goals]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      await updateGoal(goalId, {
-        title: formData.title,
-        description: formData.description,
-        targetDate: new Date(formData.targetDate),
-        progress: formData.progress,
-        status: formData.status,
-      });
-      onOpenChange(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [goalId, goal]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={(e) => {
+            try {
+              e.preventDefault();
+              mutate();
+            } finally {
+              setFormData;
+              onOpenChange(false);
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Edit Goal</DialogTitle>
             <DialogDescription>
@@ -106,15 +160,15 @@ export function EditGoalDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="targetDate">Target Date</Label>
+              <Label htmlFor="dueDate">Target Date</Label>
               <Input
-                id="targetDate"
+                id="dueDate"
                 type="date"
-                value={formData.targetDate}
+                value={formData.dueDate}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    targetDate: e.target.value,
+                    dueDate: e.target.value,
                   }))
                 }
                 required
@@ -162,12 +216,12 @@ export function EditGoalDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={loading}
+              disabled={isPending}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : "Save Changes"}
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </form>
