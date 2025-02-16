@@ -44,8 +44,8 @@ export const createGoal = async (req, res, next) => {
 export const getGoals = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const goals = await goalService.getGoals(userId, req.query);
-    res.status(200).json(goals);
+    const result = await goalService.getGoals(userId, req.query);
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }

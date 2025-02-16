@@ -1,0 +1,15 @@
+meta {
+  name: Retrieve a Goal by ID
+  type: http
+  seq: 3
+}
+
+get {
+  url: http://localhost:3001/api/goals/67b0af81931b2292cf3cae51
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}

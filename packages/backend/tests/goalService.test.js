@@ -20,8 +20,6 @@ describe('Goal Service', () => {
         completed: false,
       };
       const createdGoal = { _id: '123', ...goalData };
-
-      // Mock the Goal.create method to return the created goal.
       Goal.create.mockResolvedValue(createdGoal);
 
       // Act: Call the service.
@@ -46,53 +44,75 @@ describe('Goal Service', () => {
   });
 
   describe('getGoals', () => {
-    it('should return an array of goals', async () => {
+    it('should return an array of goals with pagination metadata', async () => {
       // Arrange
       const userId = 'user123';
       const mockGoals = [
         { _id: '1', title: 'Goal 1', user: userId },
         { _id: '2', title: 'Goal 2', user: userId },
       ];
-      // Create a chainable query mock using mockReturnThis() so that skip() returns the same object.
+      // Create a chainable query object with sort, skip, and limit
       const mockQuery = {
+        sort: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         limit: jest.fn().mockResolvedValue(mockGoals),
       };
-
-      // Mock Goal.find to return our chainable mock query object.
       Goal.find.mockReturnValue(mockQuery);
+      // Also mock countDocuments
+      Goal.countDocuments.mockResolvedValue(2);
+
+      // Define query parameters
+      const query = {
+        page: '1',
+        limit: '10',
+        sortBy: 'dueDate',
+        order: 'asc',
+      };
 
       // Act
-      const result = await goalService.getGoals(userId, {});
+      const result = await goalService.getGoals(userId, query);
 
       // Assert
       expect(Goal.find).toHaveBeenCalledWith({ user: userId });
-      expect(mockQuery.skip).toHaveBeenCalled();
-      expect(mockQuery.limit).toHaveBeenCalled();
-      expect(result).toEqual(mockGoals);
+      expect(mockQuery.sort).toHaveBeenCalledWith({ dueDate: 1 });
+      expect(mockQuery.skip).toHaveBeenCalledWith(0);
+      expect(mockQuery.limit).toHaveBeenCalledWith(10);
+      expect(Goal.countDocuments).toHaveBeenCalledWith({ user: userId });
+
+      expect(result).toEqual({
+        data: mockGoals,
+        total: 2,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      });
     });
 
-    it('should return an empty array if no goals exist', async () => {
+    it('should return an empty array with proper metadata if no goals exist', async () => {
       // Arrange
       const userId = 'user123';
-      const mockGoals = []; // No Goals
-      // Create a chainable query object
+      const mockGoals = [];
       const mockQuery = {
+        sort: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         limit: jest.fn().mockResolvedValue(mockGoals),
       };
-
-      // When Goal.find is called with the filter, return our mock query object
       Goal.find.mockReturnValue(mockQuery);
+      Goal.countDocuments.mockResolvedValue(0);
 
-      // Act - pass an empty object as query
-      const result = await goalService.getGoals(userId, {});
+      const query = { page: '1', limit: '10' };
+
+      // Act
+      const result = await goalService.getGoals(userId, query);
 
       // Assert
-      expect(Goal.find).toHaveBeenCalledWith({ user: userId });
-      expect(mockQuery.skip).toHaveBeenCalled();
-      expect(mockQuery.limit).toHaveBeenCalled();
-      expect(result).toEqual(mockGoals);
+      expect(result).toEqual({
+        data: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0,
+      });
     });
   });
 
@@ -171,10 +191,10 @@ describe('Goal Service', () => {
     });
 
     it('should not throw an error if the goal does not exist', async () => {
-      // Arrange: If deletion returns null, that’s acceptable.
+      // Arrange
       Goal.findByIdAndDelete.mockResolvedValue(null);
 
-      // Act & Assert: Should resolve without errors.
+      // Act & Assert
       await expect(
         goalService.deleteGoal('nonexistent-id')
       ).resolves.toBeUndefined();

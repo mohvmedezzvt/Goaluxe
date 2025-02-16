@@ -1,0 +1,22 @@
+meta {
+  name: Update a Reward
+  type: http
+  seq: 3
+}
+
+put {
+  url: http://localhost:3001/api/rewards/67a8bb35afad4ad152960503
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}
+
+body:json {
+  {
+    "description": "Updated reward description"
+  }
+  
+}
