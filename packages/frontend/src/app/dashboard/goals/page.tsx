@@ -122,7 +122,14 @@ export default function GoalsPage() {
 
   const { data: response, isPending } = useQuery({
     queryKey: ["Goals"],
-    queryFn: () => api.get<Goal[]>("/goals"),
+    queryFn: () =>
+      api.get<{
+        data: Goal[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      }>("/goals"),
   });
 
   const mutation = useMutation({
@@ -135,7 +142,7 @@ export default function GoalsPage() {
     },
   });
 
-  const goals = response?.data;
+  const goals = response?.data?.data;
 
   if (isPending) {
     return <Loading />;

@@ -105,7 +105,13 @@ export default function DashboardPage() {
   const { data: response, isPending } = useQuery({
     queryKey: ["Goals", title],
     queryFn: () =>
-      api.get<Goal[]>(`/goals?title=${encodeURIComponent(title ?? "")}`),
+      api.get<{
+        data: Goal[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      }>(`/goals?title=${encodeURIComponent(title ?? "")}`),
     placeholderData: keepPreviousData,
     retry: 10,
     retryDelay: 2000,
@@ -125,7 +131,7 @@ export default function DashboardPage() {
     },
   });
 
-  const goals = response?.data || [];
+  const goals = response?.data?.data || [];
   const activeGoals = goals.filter((goal) => goal.status === "active");
   const completedGoals = goals.filter((goal) => goal.status === "completed");
   const averageProgress =
