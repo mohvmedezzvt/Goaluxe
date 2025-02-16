@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
+
 export function AuthForm({ mode }: AuthFormProps) {
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
