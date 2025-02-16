@@ -12,18 +12,25 @@ export const createGoal = async (data) => {
 };
 
 /**
- * Retrieves goals for a specific user with pagination and filtering.
+ * Retrieves goals for a specific user with pagination, filtering, and sorting.
  *
  * @param {string} userId - The ID of the user.
  * @param {Object} query - An object containing query parameters.
  *    - page: The page number (default: 1)
- *    - limit: The number of results per page (default: 10)
- *    - status: Filter by goal status (e.g., 'active', 'completed', 'cancelled')
+ *    - limit: The number of results per page (default: 10, maximum: 100)
+ *    - status: Filter by goal status (e.g., 'active', 'completed', 'cancelled', 'all' for no filtering)
  *    - title: Filter by partial title match (case-insensitive)
  *    - fromDueDate: Filter goals with a dueDate on or after this date
  *    - toDueDate: Filter goals with a dueDate on or before this date
+ *    - sortBy: Field to sort by ('dueDate', 'progress', 'title')
+ *    - order: Sorting order ('asc' for ascending, 'desc' for descending)
  *
- * @returns {Promise<Array>} - An array of goal documents.
+ * @returns {Promise<Object>} - An object containing:
+ *   - data: Array of goal documents,
+ *   - total: Total number of matching goals,
+ *   - page: Current page number,
+ *   - limit: Number of items per page,
+ *   - totalPages: Total number of pages.
  */
 export const getGoals = async (userId, query = {}) => {
   // Parse pagination parameters from the query; default to page 1 and limit 10
@@ -54,8 +61,27 @@ export const getGoals = async (userId, query = {}) => {
     filter.dueDate.$lte = new Date(query.toDueDate);
   }
 
-  const goals = await Goal.find(filter).skip(skip).limit(limit);
-  return goals;
+  // Count the total number of goals that match the filter
+  const total = await Goal.countDocuments(filter);
+
+  // Build the sort object
+  let sort = {};
+  if (query.sortBy && ['dueDate', 'progress', 'title'].includes(query.sortBy)) {
+    const order = query.order && query.order.toLowerCase() === 'desc' ? -1 : 1;
+    sort[query.sortBy] = order;
+  } else {
+    // Default sort by dueDate ascending (if desired)
+    sort = { dueDate: 1 };
+  }
+
+  const goals = await Goal.find(filter).sort(sort).skip(skip).limit(limit);
+  return {
+    data: goals,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 /**

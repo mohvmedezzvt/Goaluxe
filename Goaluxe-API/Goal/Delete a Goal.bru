@@ -1,0 +1,22 @@
+meta {
+  name: Delete a Goal
+  type: http
+  seq: 5
+}
+
+delete {
+  url: http://localhost:3001/api/goals/67a7bce1b4d37eb703fa8741
+  body: none
+  auth: none
+}
+
+headers {
+  Cache-Control: no-cache
+  Postman-Token: <calculated when request is sent>
+  Host: <calculated when request is sent>
+  User-Agent: PostmanRuntime/7.39.1
+  Accept: */*
+  Accept-Encoding: gzip, deflate, br
+  Connection: keep-alive
+  Authorization: Bearer {{access_token}}
+}

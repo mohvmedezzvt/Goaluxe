@@ -1,0 +1,11 @@
+meta {
+  name: Goaluxe-API
+}
+
+auth {
+  mode: none
+}
+
+vars:pre-request {
+  access_token: {{process.env.JWT_TOKEN}}
+}

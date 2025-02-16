@@ -1,0 +1,25 @@
+meta {
+  name: Create a Reward
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:3001/api/rewards
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}
+
+body:json {
+  {
+    "type": "points",
+    "value": 100,
+    "description": "Reward for completing a challenging goal",
+    "public": true   // This will be forced to false since the user is not admin.
+  }
+  
+}

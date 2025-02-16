@@ -1,0 +1,15 @@
+meta {
+  name: Get All Rewards
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:3001/api/rewards
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}

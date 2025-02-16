@@ -1,0 +1,15 @@
+meta {
+  name: Delete a Reward
+  type: http
+  seq: 4
+}
+
+delete {
+  url: http://localhost:3001/api/rewards/67a8bb35afad4ad152960503
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}
