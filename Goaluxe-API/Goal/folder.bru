@@ -3,5 +3,4 @@ meta {
 }
 
 vars:pre-request {
-  access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3YTdiYjMzYjRkMzdlYjcwM2ZhODczNiIsImVtYWlsIjoidXBkYXRlZEBleGFtcGxlLmNvbSIsInVzZXJuYW1lIjoidXBkYXRlZFVzZXIiLCJyb2xlIjoidXNlciIsImlhdCI6MTczOTcyNjUwMiwiZXhwIjoxNzM5ODEyOTAyfQ.vw39RjGL2StntGJBnYM_FK3PgeNV_QY7yZZNPRp_hb0
-}
+  access_token: {{process.env.JWT_TOKEN}}
