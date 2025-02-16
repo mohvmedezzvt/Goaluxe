@@ -4,7 +4,9 @@ import jwt from 'jsonwebtoken';
 
 const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) || 10;
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
-const JWT_EXPIRES_IN = '1d';
+const JWT_EXPIRES_IN = '15m';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'refresh_secret';
+const JWT_REFRESH_EXPIRES_IN = '15d';
 
 /**
  * Registers a new user.
@@ -83,8 +85,8 @@ export const loginUser = async (credentials) => {
     throw new Error('Invalid email or password');
   }
 
-  // Generate a JWT token. The payload can include user ID and other necessary fields.
-  const token = jwt.sign(
+  // Generate access and refresh tokens.
+  const accessToken = jwt.sign(
     {
       id: user._id,
       email: user.email,
@@ -95,8 +97,13 @@ export const loginUser = async (credentials) => {
     { expiresIn: JWT_EXPIRES_IN }
   );
 
+  const refreshToken = jwt.sign({ id: user._id }, JWT_REFRESH_SECRET, {
+    expiresIn: JWT_REFRESH_EXPIRES_IN,
+  });
+
   return {
-    token,
+    token: accessToken,
+    refreshToken,
     user: {
       id: user._id,
       email: user.email,
@@ -104,4 +111,36 @@ export const loginUser = async (credentials) => {
       role: user.role,
     },
   };
+};
+
+/**
+ * Refreshes an access token using a refresh token.
+ * @param {string} refreshToken - The refresh token provided by the client.
+ * @returns {Promise<Object>} - An object containing a new access token.
+ * @throws {Error} - Throws an error if the refresh token is invalid or expired.
+ */
+export const refreshAccessToken = async (refreshToken) => {
+  try {
+    const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      throw new Error('Invalid refresh token');
+    }
+
+    const newAccessToken = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+
+    return { token: newAccessToken };
+  } catch (error) {
+    throw new Error('Invalid or expired refresh token');
+  }
 };

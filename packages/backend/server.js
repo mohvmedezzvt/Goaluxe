@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import mongoSanitize from 'express-mongo-sanitize';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 
 import connectDB from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
@@ -29,6 +30,8 @@ app.use(
     legacyHeaders: false,
   })
 );
+
+app.use(cookieParser());
 
 app.use(
   cors({

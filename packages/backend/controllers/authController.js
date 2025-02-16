@@ -1,4 +1,8 @@
-import { registerUser, loginUser } from '../services/authService.js';
+import {
+  registerUser,
+  loginUser,
+  refreshAccessToken,
+} from '../services/authService.js';
 
 /**
  * Registers a new user.
@@ -12,7 +16,7 @@ import { registerUser, loginUser } from '../services/authService.js';
  */
 export const register = async (req, res, next) => {
   try {
-    const { username, email, password, role } = req.body;
+    const { username, email, password } = req.body;
 
     // Validate required fields.
     if (!username || !email || !password) {
@@ -22,7 +26,7 @@ export const register = async (req, res, next) => {
     }
 
     // Call the authentication service to register the user.
-    const newUser = await registerUser({ username, email, password, role });
+    const newUser = await registerUser({ username, email, password });
 
     // Return the created user with status 201.
     res.status(201).json(newUser);
@@ -56,13 +60,56 @@ export const login = async (req, res, next) => {
     // Call the authentication service to log in the user.
     const result = await loginUser({ email, password });
 
+    // Set refresh token in an HTTP-only cookie
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Strict',
+      maxAge: 15 * 24 * 60 * 60 * 1000, // 15 days
+    });
+
     // Return the JWT token and user info with status 200.
-    res.status(200).json(result);
+    res.status(200).json({
+      token: result.token,
+      user: result.user,
+    });
   } catch (error) {
     // For authentication errors, return 401 Unauthorized.
     if (error.message === 'Invalid email or password') {
       return res.status(401).json({ message: error.message });
     }
+    next(error);
+  }
+};
+
+/**
+ * Refreshes an access token.
+ * Expects a refresh token in req.body.
+ * Validates required fields.
+ * On success, returns a 200 response with a new JWT token.
+ *
+ * @param {Request} req - Express request object.
+ * @param {Response} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
+export const refreshToken = async (req, res, next) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+
+    // Validate required fields.
+    if (!refreshToken) {
+      return res.status(400).json({
+        message: 'Refresh token is required',
+      });
+    }
+
+    // Call the authentication service to refresh the access token.
+    const newToken = await refreshAccessToken(refreshToken);
+
+    // Return the new JWT token with status 200.
+    res.status(200).json(newToken);
+  } catch (error) {
+    res.clearCookie('refreshToken');
     next(error);
   }
 };
