@@ -1,0 +1,25 @@
+meta {
+  name: Create a Reward
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:3001/api/rewards
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3YTdiYjMzYjRkMzdlYjcwM2ZhODczNiIsImVtYWlsIjoidGVzdHVzZXJAZXhhbXBsZS5jb20iLCJ1c2VybmFtZSI6InRlc3R1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3MzkwNDU3NDIsImV4cCI6MTczOTEzMjE0Mn0.nuVvYC7dybqzQgzYMHtsXMOHscXTU-3Es3cnQhhOxSI
+}
+
+body:json {
+  {
+    "type": "points",
+    "value": 100,
+    "description": "Reward for completing a challenging goal",
+    "public": true   // This will be forced to false since the user is not admin.
+  }
+  
+}

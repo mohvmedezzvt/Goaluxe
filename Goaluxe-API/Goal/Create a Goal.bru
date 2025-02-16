@@ -1,0 +1,34 @@
+meta {
+  name: Create a Goal
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:3001/api
+  body: json
+  auth: none
+}
+
+headers {
+  Cache-Control: no-cache
+  Postman-Token: <calculated when request is sent>
+  Content-Type: application/json
+  Content-Length: <calculated when request is sent>
+  Host: <calculated when request is sent>
+  User-Agent: PostmanRuntime/7.39.1
+  Accept: */*
+  Accept-Encoding: gzip, deflate, br
+  Connection: keep-alive
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3YWY5MWNlOTcyYTIwMGQ4MjAwNDc1MiIsImVtYWlsIjoiZXlhZF9fYWhtZWRAb3V0bG9vay5jb20iLCJ1c2VybmFtZSI6IkV5YWRfX0FobWVkIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3Mzk1OTg3OTgsImV4cCI6MTczOTY4NTE5OH0.LdHdOi2mk8fxnqW_mz2wmCIkQEx-X0Ui-NkxkyOB-5o
+}
+
+body:json {
+  {
+      "title": "Complete MVP",
+      "description": "Finish all backend tasks and tests for the MVP.",
+      "dueDate": "2025-03-01T00:00:00.000Z",
+      "rewardOptionId": "67a8bdef9fbd8946f872c158"
+  }
+  
+}

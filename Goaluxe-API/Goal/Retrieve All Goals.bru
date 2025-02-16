@@ -1,0 +1,26 @@
+meta {
+  name: Retrieve All Goals
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:3001/api/goals
+  body: none
+  auth: none
+}
+
+params:query {
+  ~page: 
+  ~limit: 
+  ~status: 
+  ~title: 
+  ~fromDueDate: 2025-01-01
+  ~toDueDate: 
+  ~sortBy: null
+  ~order: null
+}
+
+headers {
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3YTdiYjMzYjRkMzdlYjcwM2ZhODczNiIsImVtYWlsIjoidXBkYXRlZEBleGFtcGxlLmNvbSIsInVzZXJuYW1lIjoidXBkYXRlZFVzZXIiLCJyb2xlIjoidXNlciIsImlhdCI6MTczOTYyMzYyNCwiZXhwIjoxNzM5NzEwMDI0fQ.Pl_YWgVhcedJpVX7LJm93B9Wl7q8QWFqR0v0RkDPHGk
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Update User Profile
+  type: http
+  seq: 2
+}
+
+put {
+  url: http://localhost:3001/api/users/profile
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3YTdiYjMzYjRkMzdlYjcwM2ZhODczNiIsImVtYWlsIjoidGVzdHVzZXJAZXhhbXBsZS5jb20iLCJ1c2VybmFtZSI6InRlc3R1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3MzkwNDU3NDIsImV4cCI6MTczOTEzMjE0Mn0.nuVvYC7dybqzQgzYMHtsXMOHscXTU-3Es3cnQhhOxSI
+}
+
+body:json {
+  {
+    "username": "updatedUser",
+    "email": "updated@example.com"
+  }
+  
+}
