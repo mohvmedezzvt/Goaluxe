@@ -17,7 +17,7 @@ import useDelete from "@/stores/useDelete";
  * @param {string} props.id - The unique identifier of the goal.
  * @param {string} props.description - A brief description of the goal.
  * @param {number} props.progress - The progress percentage of the goal.
- * @param {string} props.status - The current status of the goal. Can be "active", "completed", or "archived".
+ * @param {string} props.status - The current status of the goal. Can be "active", "completed", or "cancelled".
  * @param {string} props.dueDate - The due date of the goal in ISO format.
  * @returns {JSX.Element} The rendered GoalOverViewCard component.
  *
@@ -52,9 +52,9 @@ const GoalOverViewCard = ({
       transition={{ duration: 0.2 }}
     >
       <Card className="hover:shadow-md transition-all duration-200 group">
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div className="flex-1 space-y-3">
+        <CardContent className="p-4 h-full">
+          <div className="flex flex-col sm:flex-row justify-between gap-4 h-full">
+            <div className="flex-1 space-y-3 h-full">
               <div>
                 <h3 className="font-medium group-hover:text-primary transition-colors">
                   {title}
@@ -71,7 +71,7 @@ const GoalOverViewCard = ({
                 <Progress value={progress} className="h-2" />
               </div>
             </div>
-            <div className="flex sm:flex-col items-center sm:items-end justify-between sm:gap-4 h-full">
+            <div className="flex sm:flex-col items-center sm:items-end justify-between sm:gap-4">
               <div className="flex gap-2">
                 <Button variant="ghost" size="icon" onClick={() => setEdit(id)}>
                   <Pencil className="h-4 w-4" />
@@ -85,13 +85,13 @@ const GoalOverViewCard = ({
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3 text-sm ">
+              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3 text-sm">
                 <span
                   className={cn(
                     "px-2 py-1 rounded-full text-xs whitespace-nowrap",
                     status === "active" && "bg-green-100 text-green-700",
                     status === "completed" && "bg-blue-100 text-blue-700",
-                    status === "archived" && "bg-gray-100 text-gray-700"
+                    status === "cancelled" && "bg-gray-100 text-gray-700"
                   )}
                 >
                   {status}
