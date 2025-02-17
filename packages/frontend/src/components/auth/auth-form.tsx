@@ -29,9 +29,11 @@ export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
-    username: "",
+    firstName: "",
+    secondName: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -45,7 +47,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     if (mode === "register") {
       if (!isStrongPassword(formData.password)) {
         newErrors.password =
-          "Password must be at least 8 characters and include uppercase, lowercase, and numbers";
+          "Password must be at least 8 characters long, include letters, numbers, and a special character";
       }
     } else {
       if (!validatePassword(formData.password)) {
@@ -53,7 +55,11 @@ export function AuthForm({ mode }: AuthFormProps) {
       }
     }
 
-    if (mode === "register" && !validateUsername(formData.username)) {
+    if (
+      mode === "register" &&
+      !validateUsername(formData.firstName) &&
+      !validateUsername(formData.secondName)
+    ) {
       newErrors.username =
         "Username must be 3-20 characters and can contain letters, numbers, underscores, and hyphens";
     }
@@ -91,11 +97,15 @@ export function AuthForm({ mode }: AuthFormProps) {
 
       if (mode === "login") {
         response = await auth.login(formData.email, formData.password);
-      } else {
+      } else if (formData.password === formData.confirmPassword) {
         response = await auth.register(
-          formData.username,
+          `${formData.firstName}${formData.secondName}`,
           formData.email,
           formData.password
+        );
+      } else {
+        return toast.error(
+          "Passwords do not match. Please make sure both fields are identical."
         );
       }
 
@@ -133,7 +143,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   }
 
   return (
-    <Card className="w-[350px]">
+    <Card className="w-[480px]">
       <CardHeader>
         <CardTitle>
           {mode === "login" ? "Login" : "Create an account"}
@@ -153,18 +163,37 @@ export function AuthForm({ mode }: AuthFormProps) {
           )}
 
           {mode === "register" && (
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                type="text"
-                placeholder="johndoe"
-                value={formData.username}
-                onChange={handleChange}
-                required
-                disabled={isLoading}
-              />
+            <div className="flex gap-5">
+              <div className="space-y-2">
+                <Label htmlFor="first-name" className="capitalize">
+                  first name
+                </Label>
+                <Input
+                  id="first-name"
+                  name="firstName"
+                  type="text"
+                  placeholder="John"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="second-name" className=" capitalize">
+                  second name
+                </Label>
+                <Input
+                  id="second-name"
+                  name="secondName"
+                  type="text"
+                  placeholder="Doe"
+                  value={formData.secondName}
+                  onChange={handleChange}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
               {errors.username && (
                 <p className="text-sm text-red-500">{errors.username}</p>
               )}
@@ -203,6 +232,25 @@ export function AuthForm({ mode }: AuthFormProps) {
               <p className="text-sm text-red-500">{errors.password}</p>
             )}
           </div>
+          {mode === "register" && (
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password" className=" capitalize">
+                confirm password
+              </Label>
+              <Input
+                id="confirm-password"
+                name="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                disabled={isLoading}
+              />
+              {errors.password && (
+                <p className="text-sm text-red-500">{errors.password}</p>
+              )}
+            </div>
+          )}
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-2">
