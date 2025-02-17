@@ -11,8 +11,15 @@ interface Goal {
   description: string;
   dueDate: Date;
   progress: number;
-  status: "active" | "completed" | "archived";
+  status: "active" | "completed" | "cancelled";
   createdAt: Date;
+}
+
+interface URLParams {
+  title: string | undefined;
+  page: number;
+  status: string | undefined;
+  key: "title" | "dueDate" | "progress" | undefined;
 }
 
 interface Reward {
