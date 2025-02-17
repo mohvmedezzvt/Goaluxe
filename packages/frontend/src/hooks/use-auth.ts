@@ -4,17 +4,21 @@ import { useState, useEffect } from "react";
 import { auth } from "@/lib/api";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const queryClient = useQueryClient();
+
   useEffect(() => {
     checkAuth();
   }, []);
 
   const checkAuth = () => {
     try {
-      const storedUser = localStorage.getItem("user");
+      const storedUser = sessionStorage.getItem("user");
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
@@ -38,8 +42,9 @@ export function useAuth() {
   const logout = async () => {
     try {
       await auth.logout();
-      setUser(null);
+      queryClient.removeQueries();
 
+      setUser(null);
       toast.success("Logged out successfully");
       router.push("login");
     } catch (error) {
