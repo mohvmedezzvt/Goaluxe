@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { SlidersHorizontal, Search, ChevronDown } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { ChangeEvent, useEffect, useState } from "react";
 import { useDebounce } from "use-debounce";
 
@@ -34,7 +35,7 @@ import { useDebounce } from "use-debounce";
  * @description
  * - Uses a debounced search input to filter goals by title.
  * - Updates the URL query parameters based on the search input.
- * - Provides a dropdown menu for filtering goals by status (all, active, completed, archived).
+ * - Provides a dropdown menu for filtering goals by status (all, active, completed, cancelled).
  * - Provides a dropdown menu for sorting goals by due date, progress, or title.
  *
  * @hook
@@ -62,6 +63,8 @@ export function GoalsFilters() {
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebounce(search, 500);
   const params = new URLSearchParams(window.location.search);
+  const router = useRouter();
+  const pathname = usePathname();
 
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -70,19 +73,34 @@ export function GoalsFilters() {
   useEffect(() => {
     if (debouncedSearch) {
       params.set("title", debouncedSearch);
+      params.set("page", "1"); // Reset page in URL
     } else {
       params.delete("title");
     }
-    window.history.replaceState(
-      {},
-      "",
-      `${window.location.pathname}?${params.toString()}`
-    );
+    router.replace(`${pathname}?${params.toString()}`);
   }, [debouncedSearch]);
 
-  const handleSort = (key: keyof Goal) => {};
+  const handleSort = (key: "title" | "dueDate" | "progress") => {
+    if (key) {
+      params.set("key", key);
+      params.set("page", "1"); // Reset page in URL
+    } else {
+      params.delete("key");
+    }
 
-  const handleStatusFilter = (status: Goal["status"] | "all") => {};
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+
+  const handleStatusFilter = (status: Goal["status"] | "all") => {
+    if (status) {
+      params.set("status", status);
+      params.set("page", "1"); // Reset page in URL
+    } else {
+      params.delete("status");
+    }
+
+    router.replace(`${pathname}?${params.toString()}`);
+  };
 
   return (
     <div className="flex gap-2 items-center">
@@ -115,8 +133,8 @@ export function GoalsFilters() {
           <DropdownMenuItem onClick={() => handleStatusFilter("completed")}>
             Completed
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleStatusFilter("archived")}>
-            Archived
+          <DropdownMenuItem onClick={() => handleStatusFilter("cancelled")}>
+            cancelled
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Sort by</DropdownMenuLabel>
