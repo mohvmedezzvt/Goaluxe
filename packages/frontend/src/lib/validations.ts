@@ -22,8 +22,7 @@ export const isStrongPassword = (password: string): boolean => {
   // - 1 lowercase
   // - 1 number
   // - Special characters are allowed
-  return password.length >= 8 && 
-         /[A-Z]/.test(password) && 
-         /[a-z]/.test(password) && 
-         /[0-9]/.test(password);
-}; 
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+
+  return passwordRegex.test(password);
+};
