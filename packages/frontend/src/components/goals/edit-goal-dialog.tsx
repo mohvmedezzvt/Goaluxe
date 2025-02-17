@@ -207,7 +207,7 @@ export function EditGoalDialog({
               >
                 <option value="active">Active</option>
                 <option value="completed">Completed</option>
-                <option value="archived">Archived</option>
+                <option value="cancelled">cancelled</option>
               </select>
             </div>
           </div>
