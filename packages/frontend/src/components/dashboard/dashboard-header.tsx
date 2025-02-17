@@ -11,13 +11,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserCircle } from "lucide-react";
+import Link from "next/link";
 
 export function DashboardHeader() {
   const { user, logout } = useAuth();
 
   return (
     <header className="h-16 border-b px-6 flex items-center justify-between">
-      <h1 className="text-lg font-semibold">Dashboard</h1>
+      <Link href="/dashboard">
+        <h1 className="text-lg font-semibold">Dashboard</h1>
+      </Link>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
