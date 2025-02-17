@@ -154,15 +154,18 @@ All endpoints are prefixed with `/api`.
 - **POST `/auth/login`**
   - **Description:** Logs in a user.
   - **Request Body:** JSON object with `email` and `password`.
-  - **Response:** 200 OK with a JWT token and basic user information.
+  - **Response:** 200 OK with a JWT access token and basic user information. The refresh token is set in an HTTP-only cookie.
   - **Errors:** 400 Bad Request if fields are missing, or 401 Unauthorized for invalid credentials.
 
-### **User Endpoints**
+- **POST `/auth/refresh`**
+  - **Description:** Refreshes the access token using the refresh token.
+  - **Response:** 200 OK with a new JWT access token and the refresh token is updated in the HTTP-only cookie.
+  - **Errors:** 401 Unauthorized if the refresh token is invalid or expired.
 
-- **GET `/users/profile`**
-
-  - **Description:** Retrieves the profile of the authenticated user.
-  - **Response:** 200 OK with the user profile data (password omitted).
+- **POST `/auth/logout`**
+  - **Description:** Clears the refresh token cookie and (optionally) invalidates the token via a blacklist.
+  - **Response:** 204 No Content.
+  - **Errors:** 401 Unauthorized if the refresh token is invalid or expired.
 
 - **PUT `/users/profile`**
 
@@ -181,13 +184,13 @@ All endpoints are prefixed with `/api`.
 
 - **GET `/goals`**
 
-  - **Description:** Retrieve all goals.
+  - **Description:** Returns all goals for the authenticated user with optional pagination, filtering and sorting.
   - **Response:** 200 OK with a JSON array of goal objects.
 
 - **POST `/goals`**
 
   - **Description:** Create a new goal.
-  - **Request Body:** JSON object with `title`, `description`, `dueDate`, `reward`, and `completed`.
+  - **Request Body:** JSON object with `title`, `description`, `dueDate`, `rewardOptionId`, `status`, and `progress`.
   - **Response:** 201 Created with the newly created goal document.
 
 - **GET `/goals/:id`**
