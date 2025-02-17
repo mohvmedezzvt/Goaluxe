@@ -1,5 +1,4 @@
 import axios from "axios";
-import { deleteCookie } from "cookies-next";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
@@ -9,7 +8,6 @@ const axiosInstance = axios.create({
   withCredentials: true, // Include credentials (cookies)
   headers: { "Content-Type": "application/json" },
 });
-
 axiosInstance.interceptors.request.use((config) => {
   const token = sessionStorage.getItem("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -18,8 +16,14 @@ axiosInstance.interceptors.request.use((config) => {
 
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error) => {
-    console.error("API Error:", error);
+  async (error) => {
+    if (error.response?.status === 401) {
+      const newAccessToken = await auth.refresh();
+      if (newAccessToken) {
+        error.config.headers.Authorization = `Bearer ${newAccessToken}`;
+        return axiosInstance(error.config);
+      }
+    }
     return Promise.reject(error);
   }
 );
@@ -99,6 +103,7 @@ export const auth = {
       if (response.success && response.data) {
         sessionStorage.setItem("token", accessToken);
         sessionStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("user", JSON.stringify(user));
       }
       return {
         success: true,
@@ -123,18 +128,11 @@ export const auth = {
         password,
       });
 
-      const data = (await response.data) as LoginResponse;
-
-      let accessToken = data.token;
-      const user = data.user;
-
       if (response.success && response.data) {
-        sessionStorage.setItem("token", accessToken);
-        sessionStorage.setItem("user", JSON.stringify(user));
+        window.location.href = "/login";
       }
       return {
         success: true,
-        data: { token: accessToken, user },
       };
     } catch (err) {
       return {
@@ -144,10 +142,45 @@ export const auth = {
     }
   },
 
-  logout: () => {
-    deleteCookie("token");
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("user");
+  refresh: async (): Promise<string> => {
+    try {
+      const response = await api.post(`/auth/refresh`, {});
+
+      if (!response.success) {
+        throw new Error("Refresh failed");
+      }
+
+      const data = (await response.data) as LoginResponse;
+      let accessToken = data.token;
+      const user = data.user;
+      // Update the access token in memory or sessionStorage
+      sessionStorage.setItem("token", accessToken);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      return accessToken;
+    } catch (error) {
+      // If refresh fails, clear storage and redirect to login
+      sessionStorage.clear();
+      localStorage.clear;
+      window.location.href = "/login";
+      throw error;
+    }
+  },
+
+  logout: async () => {
+    try {
+      const response = await api.post("/auth/logout", {});
+      if (!response.success) {
+        throw new Error("Logout failed");
+      }
+      sessionStorage.clear();
+      localStorage.clear();
+    } catch (err) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : "Registration failed",
+      };
+    }
   },
   isAuthenticated: () => !!sessionStorage.get("token"),
 };
