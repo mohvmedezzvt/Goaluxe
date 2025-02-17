@@ -5,20 +5,20 @@ meta {
 }
 
 get {
-  url: http://localhost:3001/api/goals
+  url: http://localhost:3001/api/goals?sortBy=progress&order=desc
   body: none
   auth: none
 }
 
 params:query {
+  sortBy: progress
+  order: desc
   ~page: 
   ~limit: 
   ~status: 
   ~title: 
   ~fromDueDate: 2025-01-01
   ~toDueDate: 
-  ~sortBy: null
-  ~order: null
 }
 
 headers {

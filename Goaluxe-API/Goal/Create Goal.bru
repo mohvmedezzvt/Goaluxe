@@ -1,0 +1,26 @@
+meta {
+  name: Create Goal
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:3001/api/goals
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}
+
+body:json {
+  {
+    "title": "Complete MVP 6",
+    "description": "Finish all backend tasks and tests for the MVP.",
+    "progress": 100,
+    "status": "completed",
+    "dueDate": null,
+    "rewardOptionId": "67a8bdef9fbd8946f872c158"
+  }
+}
