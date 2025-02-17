@@ -33,16 +33,10 @@ import {
 import { cn } from "@/lib/utils";
 import useEdit from "@/stores/useEdit";
 import GoalOverViewCard from "@/components/goals/goal-overview-card";
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import { useSearchParams } from "next/navigation";
-import useDelete from "@/stores/useDelete";
 import { GoalsLoading } from "@/components/goals/goals-loading";
+import { useDeleteGoal } from "@/hooks/use-delete-goal";
+import { useSearchParamsHook } from "@/hooks/use-search-params";
+import { useGoalsQuery } from "@/hooks/use-goals-query";
 
 /**
  * DashboardPage component is the main dashboard view for the application.
@@ -65,90 +59,53 @@ import { GoalsLoading } from "@/components/goals/goals-loading";
  * This component uses several hooks and components from the application:
  * - `useAuth` to get the current user.
  * - `useSearchParams` to get query parameters from the URL.
- * - `useQuery` to fetch goals data from the API.
- * - `useDelete` and `useMutation` to handle goal deletion.
+ * - `useGoalsQuery` to fetch goals data from the API.
+ * - `useDeleteGoal` to handle goal deletion.
  * - `useEdit` to manage goal editing state.
  * - `useState` to manage local state for dialogs.
- * - `useQueryClient` to manage query caching and invalidation.
  *
  * The component is divided into several sections:
  * - Header Section: Displays a welcome message and a button to add a new goal.
  * - Quick Stats: Shows quick statistics about active goals, completed goals, overall progress, and upcoming deadlines.
  * - Main Content Grid: Contains the goals list and a sidebar with progress overview and upcoming deadlines.
  * - Dialogs: Includes dialogs for adding, editing, and deleting goals.
- *
- * @hook
- * @function useAuth
- * @function useSearchParams
- * @function useQuery
- * @function useDelete
- * @function useMutation
- * @function useEdit
- * @function useState
- * @function useQueryClient
- *
- * @typedef {Object} Goal
- * @property {string} id - The unique identifier of the goal.
- * @property {string} title - The title of the goal.
- * @property {string} description - The description of the goal.
- * @property {string} status - The status of the goal (e.g., "active", "completed").
- * @property {Date} createdAt - The creation date of the goal.
- * @property {Date} dueDate - The due date of the goal.
- * @property {number} progress - The progress percentage of the goal.
  */
 export default function DashboardPage() {
-  const { user } = useAuth();
-  const searchParams = useSearchParams();
-  const title = searchParams.get("title") || undefined;
+  const { user } = useAuth(); // Get the authenticated user
+  const { handleDeleteGoal, isDeleting } = useDeleteGoal(); // Hook for deleting goals
+  const { isEditing, setEdit } = useEdit(); // Hook for managing edit state
+  const [showAddDialog, setShowAddDialog] = useState(false); // State for controlling the Add Goal dialog
 
-  const queryClient = useQueryClient();
-  const { data: response, isPending } = useQuery({
-    queryKey: ["Goals", title],
-    queryFn: () =>
-      api.get<{
-        data: Goal[];
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
-      }>(`/goals?title=${encodeURIComponent(title ?? "")}`),
-    placeholderData: keepPreviousData,
-    retry: 10,
-    retryDelay: 2000,
+  // Extract query parameters for filtering and pagination
+  const { title, page, status, key, handlePagination } = useSearchParamsHook();
+
+  // Fetch goals using `react-query`
+  const { data: response, isPending } = useGoalsQuery({
+    title,
+    page,
+    status,
+    key,
   });
 
-  const { isDeleting, setDelete } = useDelete();
-  const { isEditing, setEdit } = useEdit();
-  const [showAddDialog, setShowAddDialog] = useState(false);
-
-  const mutation = useMutation({
-    mutationKey: [`Goal-delete-${isDeleting}`],
-    mutationFn: async (deletingGoal: string) => {
-      return await api.delete(`goals/${deletingGoal}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["Goals"] });
-    },
-  });
-
+  // Extract goals data from the response
   const goals = response?.data?.data || [];
+  const totalPages = response?.data?.totalPages || 0;
+
+  // Categorize goals into active and completed
   const activeGoals = goals.filter((goal) => goal.status === "active");
   const completedGoals = goals.filter((goal) => goal.status === "completed");
+
+  // Calculate the average progress of all goals
   const averageProgress =
     goals.length > 0
       ? goals.reduce((acc, goal) => acc + goal.progress, 0) / goals.length
       : 0;
 
-  const handleDeleteGoal = async () => {
-    if (isDeleting) {
-      mutation.mutate(isDeleting);
-      setDelete(null);
-    }
-  };
-
+  const isDataEmpty = !isPending && !title && !status && goals.length === 0;
+  const isSearchResultEmpty = (title || status) && goals.length === 0;
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500">
-      {/* Header Section - Improved mobile layout */}
+      {/* Header Section */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -168,7 +125,7 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      {/* Quick Stats - Better mobile grid */}
+      {/* Quick Stats Section */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         {[
           {
@@ -204,7 +161,7 @@ export default function DashboardPage() {
         ].map((stat, i) => (
           <Card key={i} className="hover:shadow-md transition-all">
             <CardContent className="p-4 sm:pt-6">
-              <div className="flex  gap-3">
+              <div className="flex gap-3">
                 <div className={cn("h-fit p-2 rounded-lg", stat.bgColor)}>
                   {stat.icon}
                 </div>
@@ -219,7 +176,8 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
-      {/* Main Content Grid - Responsive layout */}
+
+      {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-6">
         {/* Goals List Section */}
         <div className="lg:col-span-4 space-y-6 flex flex-col items-center">
@@ -232,70 +190,59 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <AnimatePresence mode="popLayout">
-                <div className="space-y-4  max-h-[calc(100vh-32.5rem)] overflow-y-auto">
+                <div className="space-y-4 h-[calc(100vh-32.5rem)] overflow-y-auto">
                   {!isPending ? (
-                    goals.map(
-                      ({
-                        title,
-                        description,
-                        createdAt,
-                        id,
-                        status,
-                        dueDate,
-                        progress,
-                      }) => (
-                        <GoalOverViewCard
-                          key={id}
-                          title={title}
-                          description={description}
-                          createdAt={createdAt}
-                          id={id}
-                          status={status}
-                          dueDate={dueDate}
-                          progress={progress}
-                        />
-                      )
-                    )
+                    goals.map((goal) => (
+                      <GoalOverViewCard key={goal.id} {...goal} />
+                    ))
                   ) : (
                     <GoalsLoading />
                   )}
 
-                  {/* Empty States - Centered on mobile */}
-                  {title && goals?.length == 0 && (
+                  {/* Empty States */}
+                  {isSearchResultEmpty && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
+                      className="h-full"
                     >
-                      <Card className="p-6 sm:p-8 text-center bg-muted/50">
-                        <Search className="w-8 h-8 mx-auto text-muted-foreground" />
-                        <p className="mt-4 text-lg font-medium">
-                          No matching goals
-                        </p>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          Try adjusting your search or filters
-                        </p>
+                      <Card className="flex justify-center items-center p-6 sm:p-8 text-center bg-muted/50 h-full">
+                        <div>
+                          <Search className="w-8 h-8 mx-auto text-muted-foreground" />
+                          <p className="mt-4 text-lg font-medium">
+                            No matching goals
+                          </p>
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            Try adjusting your search or filters
+                          </p>
+                        </div>
                       </Card>
                     </motion.div>
                   )}
 
-                  {!isPending && !title && goals.length === 0 && (
+                  {isDataEmpty && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
+                      className="h-full"
                     >
-                      <Card className="p-8 text-center bg-muted/50">
-                        <Target className="w-8 h-8 mx-auto text-muted-foreground" />
-                        <p className="mt-4 text-lg font-medium">No goals yet</p>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          Start by adding your first goal!
-                        </p>
-                        <Button
-                          onClick={() => setShowAddDialog(true)}
-                          className="mt-4"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Your First Goal
-                        </Button>
+                      <Card className="flex justify-center items-center p-8 text-center bg-muted/50 h-full">
+                        <div>
+                          <Target className="w-8 h-8 mx-auto text-muted-foreground" />
+                          <p className="mt-4 text-lg font-medium">
+                            No goals yet
+                          </p>
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            Start by adding your first goal!
+                          </p>
+                          <Button
+                            onClick={() => setShowAddDialog(true)}
+                            className="mt-4"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Your First Goal
+                          </Button>
+                        </div>
                       </Card>
                     </motion.div>
                   )}
@@ -303,14 +250,18 @@ export default function DashboardPage() {
               </AnimatePresence>
             </CardContent>
           </Card>
-          <Pagination
-            className="bg-default-200 rounded-2xl"
-            total={10}
-            initialPage={1}
-          />
+          {totalPages >= 2 && (
+            <Pagination
+              className="bg-default-100 rounded-2xl"
+              total={totalPages || 0}
+              page={page}
+              initialPage={1}
+              onChange={(page) => handlePagination(page)}
+            />
+          )}
         </div>
 
-        {/* Sidebar - Horizontal scroll on mobile */}
+        {/* Sidebar Section */}
         <div className="lg:col-span-2 space-y-6">
           {/* Progress Overview */}
           <Card>
@@ -345,7 +296,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Upcoming Deadlines - Scrollable on mobile */}
+          {/* Upcoming Deadlines */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -362,15 +313,18 @@ export default function DashboardPage() {
                       new Date(b.dueDate).getTime()
                   )
                   .slice(0, 3)
-                  .map(({ title, id, dueDate, progress }) => (
-                    <div key={id} className="flex justify-between items-center">
+                  .map((goal) => (
+                    <div
+                      key={goal.id}
+                      className="flex justify-between items-center"
+                    >
                       <div>
-                        <p className="font-medium">{title}</p>
+                        <p className="font-medium">{goal.title}</p>
                         <p className="text-sm text-muted-foreground">
-                          Due {new Date(dueDate).toLocaleDateString()}
+                          Due {new Date(goal.dueDate).toLocaleDateString()}
                         </p>
                       </div>
-                      <Progress value={progress} className="w-20 h-2" />
+                      <Progress value={goal.progress} className="w-20 h-2" />
                     </div>
                   ))}
                 {activeGoals.length === 0 && (
@@ -395,10 +349,7 @@ export default function DashboardPage() {
         />
       )}
 
-      <AlertDialog
-        open={!!isDeleting && !mutation.isPending}
-        onOpenChange={() => setDelete(null)}
-      >
+      <AlertDialog open={!!isDeleting}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
