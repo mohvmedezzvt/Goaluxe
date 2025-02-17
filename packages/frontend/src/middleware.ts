@@ -2,17 +2,26 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { decodeJwt } from "jose";
 import { authRoutes, protectedRoutes } from "./config/routes";
+import { api } from "./lib/api";
 
-// Environment variables
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
-
+/**
+ * Logs messages to the console in development mode.
+ *
+ * @param {string} message - The log message.
+ * @param {...any} args - Additional arguments.
+ */
 function log(message: string, ...args: any[]) {
   if (process.env.NODE_ENV === "development") {
     console.log(`[Middleware] ${message}`, ...args);
   }
 }
 
+/**
+ * Checks if a JWT token is expired.
+ *
+ * @param {string} token - The JWT token.
+ * @returns {boolean} - Returns true if the token is expired, false otherwise.
+ */
 function isTokenExpired(token: string): boolean {
   try {
     const { exp } = decodeJwt(token);
@@ -22,6 +31,19 @@ function isTokenExpired(token: string): boolean {
   }
 }
 
+/**
+ * Middleware function to handle authentication and authorization for incoming requests.
+ *
+ * @param {NextRequest} request - The incoming request object.
+ * @returns {Promise<NextResponse>} - The response object to be sent back to the client.
+ *
+ * This middleware performs the following tasks:
+ * - Skips middleware for static files and API routes.
+ * - Handles token refresh if the token is expired.
+ * - Redirects to login page if no token is present for protected routes.
+ * - Redirects to dashboard if a valid token is present for auth routes.
+ * - Redirects to login page if no token is present at the root path.
+ */
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get("refreshToken")?.value;
   const { pathname } = request.nextUrl;
@@ -40,25 +62,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  /**
+   * Handles token refresh when the token is expired.
+   *
+   * @returns {Promise<NextResponse>} - The response object with updated token or redirection.
+   */
   async function handleTokenRefresh(): Promise<NextResponse> {
     try {
-      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
+      const refreshResponse = await api.post(`/auth/refresh`, {});
 
-      if (refreshResponse.ok) {
-        const data = await refreshResponse.json();
-        const newToken = data.token;
-
+      if (refreshResponse.success) {
         const response = NextResponse.redirect(request.nextUrl);
-        response.cookies.set("token", newToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-          path: "/",
-        });
 
         log("Token refreshed successfully");
         return response;
@@ -112,13 +126,12 @@ export async function middleware(request: NextRequest) {
       log("Auto sign-in: Redirecting to dashboard");
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
-    log("No token: Redirecting to login");
-    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
 }
 
+// Middleware matcher configuration
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
