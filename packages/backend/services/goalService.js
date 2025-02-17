@@ -70,8 +70,8 @@ export const getGoals = async (userId, query = {}) => {
     const order = query.order && query.order.toLowerCase() === 'desc' ? -1 : 1;
     sort[query.sortBy] = order;
   } else {
-    // Default sort by dueDate ascending (if desired)
-    sort = { dueDate: 1 };
+    // Default sort by creation time decending (newest first)
+    sort = { createdAt: -1 };
   }
 
   const goals = await Goal.find(filter).sort(sort).skip(skip).limit(limit);
