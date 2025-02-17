@@ -1,0 +1,22 @@
+meta {
+  name: Update Goal
+  type: http
+  seq: 4
+}
+
+put {
+  url: http://localhost:3001/api/goals/67b3370ccbdc67af842a5010
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}
+
+body:json {
+  {
+    "title": "Complete MVP 5",
+    "progress": 90
+  }
+}
