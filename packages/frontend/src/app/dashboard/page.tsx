@@ -77,14 +77,16 @@ export default function DashboardPage() {
   const [showAddDialog, setShowAddDialog] = useState(false); // State for controlling the Add Goal dialog
 
   // Extract query parameters for filtering and pagination
-  const { title, page, status, key, handlePagination } = useSearchParamsHook();
+  const { title, page, status, sortBy, order, handlePagination } =
+    useSearchParamsHook();
 
   // Fetch goals using `react-query`
   const { data: response, isPending } = useGoalsQuery({
     title,
     page,
     status,
-    key,
+    sortBy,
+    order,
   });
 
   // Extract goals data from the response
