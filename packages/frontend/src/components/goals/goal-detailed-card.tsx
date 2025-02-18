@@ -4,8 +4,8 @@ import React from "react";
 import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import useEdit from "@/stores/useEdit";
-
 import useDelete from "@/stores/useDelete";
+import StatusTag from "./goal-status-tag";
 
 const GoalDetailedCard = ({
   id,
@@ -48,7 +48,7 @@ const GoalDetailedCard = ({
         </div>
         <div className="flex justify-between text-sm text-muted-foreground">
           <span>Target: {new Date(dueDate).toLocaleDateString()}</span>
-          <span className="capitalize">{status}</span>
+          <StatusTag status={status} />
         </div>
       </CardContent>
     </Card>
