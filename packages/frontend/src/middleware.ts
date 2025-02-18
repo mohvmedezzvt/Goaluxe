@@ -37,12 +37,12 @@ function isTokenExpired(token: string): boolean {
  * @param {NextRequest} request - The incoming request object.
  * @returns {Promise<NextResponse>} - The response object to be sent back to the client.
  *
- * This middleware performs the following tasks:
- * - Skips middleware for static files and API routes.
- * - Handles token refresh if the token is expired.
- * - Redirects to login page if no token is present for protected routes.
- * - Redirects to dashboard if a valid token is present for auth routes.
- * - Redirects to login page if no token is present at the root path.
+ * **Functionality:**
+ * - **Skips** middleware for static files and API routes.
+ * - **Handles token refresh** when expired.
+ * - **Redirects to login** if the user is unauthorized on protected routes.
+ * - **Redirects to dashboard** if an authenticated user visits an auth route.
+ * - **Auto sign-in to dashboard** from the root path if a valid token exists.
  */
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get("refreshToken")?.value;
@@ -63,7 +63,7 @@ export async function middleware(request: NextRequest) {
   }
 
   /**
-   * Handles token refresh when the token is expired.
+   * Handles refreshing the authentication token when expired.
    *
    * @returns {Promise<NextResponse>} - The response object with updated token or redirection.
    */
@@ -78,7 +78,7 @@ export async function middleware(request: NextRequest) {
         return response;
       }
 
-      // Refresh failed - clear tokens and redirect
+      // Refresh failed - clear tokens and redirect to login
       const loginResponse = NextResponse.redirect(
         new URL("/login", request.url)
       );
@@ -88,11 +88,13 @@ export async function middleware(request: NextRequest) {
       log("Refresh error:", error);
       const response = NextResponse.redirect(new URL("/login", request.url));
       response.cookies.delete("token");
+      localStorage.clear();
+      sessionStorage.clear();
       return response;
     }
   }
 
-  // Handle protected routes
+  // Handle protected routes: Ensure authentication
   if (isProtectedRoute) {
     if (!token) {
       log("Redirecting to login - no token");
@@ -107,7 +109,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Handle auth routes
+  // Handle auth routes: Prevent logged-in users from accessing login/signup pages
   if (isAuthRoute) {
     if (token && !isTokenExpired(token)) {
       log("Redirecting to dashboard - valid token");
@@ -116,7 +118,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Handle root path
+  // Handle root path: Auto sign-in if a valid token exists
   if (pathname === "/") {
     if (token) {
       if (isTokenExpired(token)) {
@@ -131,7 +133,10 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Middleware matcher configuration
+/**
+ * Middleware matcher configuration.
+ * Ensures that the middleware does not run for static assets or Next.js internal paths.
+ */
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
