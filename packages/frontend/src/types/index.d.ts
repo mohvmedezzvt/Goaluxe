@@ -16,10 +16,11 @@ interface Goal {
 }
 
 interface URLParams {
-  title: string | undefined;
+  title: string | null;
   page: number;
-  status: string | undefined;
-  key: "title" | "dueDate" | "progress" | undefined;
+  order: "desc" | "asc";
+  status: string | null;
+  sortBy: "title" | "dueDate" | "progress" | null;
 }
 
 interface Reward {
