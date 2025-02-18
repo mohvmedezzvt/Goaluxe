@@ -14,14 +14,13 @@ interface FilterParams {
   setSearch: (value: URLParams["title"]) => void; // Function to update the search query.
   order: URLParams["order"]; // The sorting order ("asc" or "desc").
   setOrder: (value: URLParams["order"]) => void; // Function to update the sorting order.
-  clear: () => void; // Function to reset all filters to their default values.
 }
 
 /**
  * Zustand store for managing filter states in the application.
  * Provides functions to update and reset filters.
  */
-const useFilter = create<FilterParams>((set) => ({
+const useFilter = create<FilterParams>((set, remove) => ({
   status: null,
   sortBy: null,
   search: null,
@@ -31,11 +30,6 @@ const useFilter = create<FilterParams>((set) => ({
   setSortBy: (value) => set({ sortBy: value }),
   setSearch: (value) => set({ search: value }),
   setOrder: (value) => set({ order: value }),
-
-  /**
-   * Resets all filters except for the sorting order.
-   */
-  clear: () => set({ status: null, sortBy: null, search: null }),
 }));
 
 /**
@@ -56,7 +50,8 @@ export const useInitializeFilterFromURL = () => {
     setSearch(searchParam);
     setStatus(statusParam);
     setOrder(orderParam || "desc"); // Default to "desc" if no order is provided.
-  }, []);
+    console.log(statusParam);
+  }, [params]);
 };
 
 export default useFilter;

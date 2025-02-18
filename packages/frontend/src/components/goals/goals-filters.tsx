@@ -82,7 +82,6 @@ export function GoalsFilters() {
     setSearch,
     order,
     setOrder,
-    clear,
   } = useFilter();
 
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
@@ -144,7 +143,6 @@ export function GoalsFilters() {
   };
   const handleClear = () => {
     router.replace(`${pathname}`);
-    clear();
   };
   useEffect(() => {
     if (search === "") {
@@ -159,7 +157,7 @@ export function GoalsFilters() {
           key="sortBy"
           filterKey="sortBy"
           filterValue={sortBy}
-          onRemove={() => handleRemove("key")}
+          onRemove={() => handleRemove("sortBy")}
         />
         <Badge
           key="status"
