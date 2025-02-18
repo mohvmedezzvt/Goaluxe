@@ -1,12 +1,12 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Pencil, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import useEdit from "@/stores/useEdit";
 import useDelete from "@/stores/useDelete";
+import StatusTag from "./goal-status-tag";
 
 /**
  * Component representing an overview card for a goal.
@@ -86,16 +86,7 @@ const GoalOverViewCard = ({
                 </Button>
               </div>
               <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3 text-sm">
-                <span
-                  className={cn(
-                    "px-2 py-1 rounded-full text-xs whitespace-nowrap",
-                    status === "active" && "bg-green-100 text-green-700",
-                    status === "completed" && "bg-blue-100 text-blue-700",
-                    status === "cancelled" && "bg-gray-100 text-gray-700"
-                  )}
-                >
-                  {status}
-                </span>
+                <StatusTag status={status} />
                 <span className="text-muted-foreground whitespace-nowrap">
                   Due {new Date(dueDate).toLocaleDateString()}
                 </span>
