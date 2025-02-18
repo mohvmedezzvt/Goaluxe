@@ -12,10 +12,11 @@ export function useSearchParamsHook(): URLParams & {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const title = searchParams.get("title") || undefined;
-  const status = searchParams.get("status") || undefined;
-  const key = (searchParams.get("key") as URLParams["key"]) ?? undefined;
+  const title = searchParams.get("title") || null;
+  const status = searchParams.get("status") || null;
+  const sortBy = (searchParams.get("sortBy") as URLParams["sortBy"]) ?? null;
   const page = Number(searchParams.get("page")) || 1;
+  const order = searchParams.get("order") as URLParams["order"];
 
   /**
    * Handles pagination by updating the `page` parameter in the URL.
@@ -29,5 +30,5 @@ export function useSearchParamsHook(): URLParams & {
     router.replace(`${pathname}?${params.toString()}`);
   };
 
-  return { title, page, status, key, handlePagination };
+  return { title, page, status, sortBy, order, handlePagination };
 }
