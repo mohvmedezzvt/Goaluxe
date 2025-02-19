@@ -160,6 +160,7 @@ export const auth = {
       if (response.success && response.data) {
         sessionStorage.setItem("token", accessToken);
         sessionStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("user", JSON.stringify(user));
       }
 
       return {
