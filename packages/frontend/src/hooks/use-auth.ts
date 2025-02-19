@@ -35,7 +35,7 @@ export function useAuth() {
    */
   const checkAuth = () => {
     try {
-      const storedUser = sessionStorage.getItem("user");
+      const storedUser = localStorage.getItem("user");
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
