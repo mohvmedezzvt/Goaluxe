@@ -23,11 +23,6 @@ const navItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Goals",
-    href: "/dashboard/goals",
-    icon: Target,
-  },
-  {
     title: "Rewards",
     href: "/dashboard/rewards",
     icon: Trophy,
