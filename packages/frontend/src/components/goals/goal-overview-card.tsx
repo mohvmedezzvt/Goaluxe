@@ -1,12 +1,14 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, ArrowRight } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent, CardHeader } from "../ui/card";
 import useEdit from "@/stores/useEdit";
 import useDelete from "@/stores/useDelete";
 import StatusTag from "./goal-status-tag";
+import Link from "next/link";
+import { Skeleton } from "@heroui/react";
 
 /**
  * Component representing an overview card for a goal.
@@ -84,6 +86,11 @@ const GoalOverViewCard = ({
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
+                <Link href={`/dashboard/goal/${id}`}>
+                  <Button variant="ghost" size="icon">
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
               <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3 text-sm">
                 <StatusTag status={status} />
