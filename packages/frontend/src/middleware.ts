@@ -87,9 +87,7 @@ export async function middleware(request: NextRequest) {
     } catch (error) {
       log("Refresh error:", error);
       const response = NextResponse.redirect(new URL("/login", request.url));
-      response.cookies.delete("token");
-      localStorage.clear();
-      sessionStorage.clear();
+      response.cookies.delete("refreshToken");
       return response;
     }
   }
