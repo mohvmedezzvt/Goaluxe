@@ -54,6 +54,7 @@ export function useAuth(): AuthState {
         title: "Authentication Error",
         description: "Failed to load user data. Please log in again.",
         color: "danger",
+        timeout: 2500,
       });
     } finally {
       setLoading(false);
@@ -69,11 +70,6 @@ export function useAuth(): AuthState {
     try {
       setUser(userData);
       localStorage.setItem("user", JSON.stringify(userData));
-      addToast({
-        title: "Login Successful",
-        description: `Welcome back, ${userData.username}!`,
-        color: "success",
-      });
     } catch (error) {
       console.error("Login error:", error);
     }
@@ -91,7 +87,7 @@ export function useAuth(): AuthState {
       addToast({
         title: "Logged Out",
         description: "You have been logged out successfully.",
-        color: "success",
+        timeout: 2500,
       });
       router.push("/login"); // Redirect user to login page
     } catch (error) {
