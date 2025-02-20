@@ -1,6 +1,9 @@
 import Subtask from '../models/subtaskModel.js';
 import Goal from '../models/goalModel.js';
 
+// a maximum allowed limit for subtasks per page.
+const MAX_SUBTASK_LIMIT = 50;
+
 /**
  * Create a new subtask for a given goal.
  *
@@ -34,9 +37,11 @@ export const getSubtasks = async (goalId, page = 1, limit = 10) => {
   if (!goal) throw new Error('Parent goal not found');
 
   // Retrieve paginated subtasks for the goal.
+  limit = Math.min(limit, MAX_SUBTASK_LIMIT);
+  page = Math.max(Number(page) || 1, 1);
   const skip = (page - 1) * limit;
-  const total = await Subtask.countDocuments({ goal: goalId });
 
+  const total = await Subtask.countDocuments({ goal: goalId });
   const subtasks = await Subtask.find({ goal: goalId })
     .skip(skip)
     .limit(limit)

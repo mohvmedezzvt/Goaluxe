@@ -35,7 +35,7 @@ export const createGoal = async (data) => {
 export const getGoals = async (userId, query = {}) => {
   // Parse pagination parameters from the query; default to page 1 and limit 10
   const page = parseInt(query.page, 10) || 1;
-  const maxLimit = 100;
+  const maxLimit = 50;
   const limit = Math.min(parseInt(query.limit, 10) || 10, maxLimit);
   const skip = (page - 1) * limit;
 

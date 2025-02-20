@@ -47,6 +47,7 @@ const getCommonAnalytics = async (
     : 0;
 
   dueSoonLimit = Math.min(dueSoonLimit, MAX_DUE_SOON_LIMIT);
+  dueSoonPage = Math.max(Number(dueSoonPage) || 1, 1);
 
   // Due Soon: Count and paginated list of goals with dueDate within the next 7 days
   const dueSoonCount = await Goal.countDocuments({
