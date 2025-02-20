@@ -70,6 +70,7 @@ const getCommonAnalytics = async (
     dueSoonCount,
     dueSoonGoals,
     totalCount,
+    baseFilter,
   };
 };
 
