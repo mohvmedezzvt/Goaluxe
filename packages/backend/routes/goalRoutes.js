@@ -1,5 +1,6 @@
 import express from 'express';
 import * as goalController from '../controllers/goalController.js';
+import subtaskRoutes from '../routes/subtaskRoutes.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import { validateRequest } from '../middleware/validateRequest.js';
 import {
@@ -22,5 +23,7 @@ router.put(
   goalController.updateGoal
 ); // Update a goal by ID
 router.delete('/:id', goalController.deleteGoal); // Delete a goal by ID
+
+router.use('/:goalId/subtasks', subtaskRoutes);
 
 export default router;

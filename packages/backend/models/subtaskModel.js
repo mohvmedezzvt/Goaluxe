@@ -34,7 +34,7 @@ const subtaskSchema = new Schema(
   }
 );
 
-rewardSchema.set('toJSON', {
+subtaskSchema.set('toJSON', {
   virtuals: true,
   transform: (doc, ret) => {
     ret.id = ret._id; // add a new 'id' field with the value of '_id'
