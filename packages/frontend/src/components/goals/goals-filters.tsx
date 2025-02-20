@@ -19,6 +19,7 @@ import { useDebounce } from "use-debounce";
 import Badge from "../ui/badge";
 import useFilter, { useInitializeFilterFromURL } from "@/stores/useFilter";
 import { AnimatePresence, motion } from "framer-motion";
+import { Card } from "../ui/card";
 
 /**
  * Component for filtering and sorting goals.
@@ -260,3 +261,23 @@ export function GoalsFilters() {
     </div>
   );
 }
+
+export const NoSearchResults = () => {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="h-full"
+    >
+      <Card className="flex justify-center items-center p-6 sm:p-8 text-center bg-muted/50 h-full">
+        <div>
+          <Search className="w-8 h-8 mx-auto text-muted-foreground" />
+          <p className="mt-4 text-lg font-medium">No matching goals</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Try adjusting your search or filters
+          </p>
+        </div>
+      </Card>
+    </motion.div>
+  );
+};
