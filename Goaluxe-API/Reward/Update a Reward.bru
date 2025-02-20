@@ -5,9 +5,13 @@ meta {
 }
 
 put {
-  url: http://localhost:3001/api/rewards/67a8bb35afad4ad152960503
+  url: http://localhost:3001/api/rewards/:rewardId
   body: json
   auth: none
+}
+
+params:path {
+  rewardId: 67a8bb35afad4ad152960503
 }
 
 headers {

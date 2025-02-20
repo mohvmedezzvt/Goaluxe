@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: http://localhost:3001/api/goals/67b0af81931b2292cf3cae51
+  url: http://localhost:3001/api/goals/:goalId
   body: none
   auth: none
+}
+
+params:path {
+  goalId: 67b0af81931b2292cf3cae51
 }
 
 headers {

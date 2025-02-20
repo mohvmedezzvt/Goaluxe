@@ -5,9 +5,13 @@ meta {
 }
 
 delete {
-  url: http://localhost:3001/api/goals/67a7bce1b4d37eb703fa8741
+  url: http://localhost:3001/api/goals/:goalId
   body: none
   auth: none
+}
+
+params:path {
+  goalId: 67a7bce1b4d37eb703fa8741
 }
 
 headers {

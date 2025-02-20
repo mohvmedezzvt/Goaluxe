@@ -5,9 +5,13 @@ meta {
 }
 
 put {
-  url: http://localhost:3001/api/goals/67b3370ccbdc67af842a5010
+  url: http://localhost:3001/api/goals/:goalId
   body: json
   auth: none
+}
+
+params:path {
+  goalId: 67b0af81931b2292cf3cae51
 }
 
 headers {
