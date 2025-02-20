@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { AuthForm } from "@/components/auth/auth-form";
 import { useAuth } from "@/hooks/use-auth";
-import { Loading } from "@/components/ui/loading";
+import Loader from "@/components/ui/loading";
 
 export default function LoginPage() {
   const { loading } = useAuth();
 
   if (loading) {
-    return <Loading />;
+    return <Loader />;
   }
 
   return (

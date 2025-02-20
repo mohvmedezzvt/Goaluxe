@@ -3,7 +3,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
-import { Loading } from "@/components/ui/loading";
+import Loader from "@/components/ui/loading";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -22,7 +22,7 @@ export default function DashboardLayout({
   }, [loading, isAuthenticated, router]);
 
   if (loading) {
-    return <Loading />;
+    return <Loader />;
   }
 
   return (
