@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Plus,
   Target,
-  Search,
   Calendar,
   BarChart3,
   Clock,
@@ -17,7 +16,10 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { AddGoalDialog } from "@/components/goals/add-goal-dialog";
 import { EditGoalDialog } from "@/components/goals/edit-goal-dialog";
-import { GoalsFilters } from "@/components/goals/goals-filters";
+import {
+  GoalsFilters,
+  NoSearchResults,
+} from "@/components/goals/goals-filters";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pagination } from "@heroui/pagination";
 import {
@@ -33,10 +35,12 @@ import {
 import { cn } from "@/lib/utils";
 import useEdit from "@/stores/useEdit";
 import GoalOverViewCard from "@/components/goals/goal-overview-card";
-import { GoalsLoading } from "@/components/goals/goals-loading";
 import { useDeleteGoal } from "@/hooks/use-delete-goal";
 import { useSearchParamsHook } from "@/hooks/use-search-params";
 import { useGoalsQuery } from "@/hooks/use-goals-query";
+import { OverviewGoalCardSkeleton } from "@/components/skeleton/overview-goal-card";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 /**
  * DashboardPage component is the main dashboard view for the application.
@@ -80,8 +84,17 @@ export default function DashboardPage() {
   const { title, page, status, sortBy, order, handlePagination } =
     useSearchParamsHook();
 
+  // Fetch goals analytics using `react-query`
+
+  const { data: analytics, isPending: loading } = useQuery({
+    queryKey: ["analytics"],
+    queryFn: async () => {
+      return (await api.get<Analytics>("/analytics/dashboard")).data;
+    },
+  });
+
   // Fetch goals using `react-query`
-  const { data: response, isPending } = useGoalsQuery({
+  const { data: Goals, isPending } = useGoalsQuery({
     title,
     page,
     status,
@@ -90,23 +103,21 @@ export default function DashboardPage() {
   });
 
   // Extract goals data from the response
-  const goals = response?.data?.data || [];
-  const totalPages = response?.data?.totalPages || 0;
+  const goals = Goals?.data?.data || [];
+  const totalPages = Goals?.data?.totalPages || 0;
 
   // Categorize goals into active and completed
-  const activeGoals = goals.filter((goal) => goal.status === "active");
-  const completedGoals = goals.filter((goal) => goal.status === "completed");
+  const activeGoals = analytics?.activeCount;
+  const dueSoonGoals = analytics?.dueSoonGoals || [];
+  const completedGoals = analytics?.completedCount || 0;
 
   // Calculate the average progress of all goals
-  const averageProgress =
-    goals.length > 0
-      ? goals.reduce((acc, goal) => acc + goal.progress, 0) / goals.length
-      : 0;
+  const averageProgress = analytics?.overallProgress || 0;
 
   const isDataEmpty = !isPending && !title && !status && goals.length === 0;
   const isSearchResultEmpty = (title || status) && goals.length === 0;
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500 max-w-[1400px] mx-auto">
       {/* Header Section */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
@@ -133,13 +144,13 @@ export default function DashboardPage() {
           {
             icon: <Target className="h-5 w-5 text-primary" />,
             label: "Active Goals",
-            value: activeGoals.length,
+            value: activeGoals,
             bgColor: "bg-primary/10",
           },
           {
             icon: <CheckCircle2 className="h-5 w-5 text-green-600" />,
             label: "Completed",
-            value: completedGoals.length,
+            value: completedGoals,
             bgColor: "bg-green-100 dark:bg-green-900/20",
           },
           {
@@ -151,13 +162,7 @@ export default function DashboardPage() {
           {
             icon: <Clock className="h-5 w-5 text-orange-600" />,
             label: "Due Soon",
-            value: activeGoals.filter((g) => {
-              const daysLeft = Math.ceil(
-                (new Date(g.dueDate).getTime() - new Date().getTime()) /
-                  (1000 * 60 * 60 * 24)
-              );
-              return daysLeft <= 7 && daysLeft > 0;
-            }).length,
+            value: dueSoonGoals.length,
             bgColor: "bg-orange-100 dark:bg-orange-900/20",
           },
         ].map((stat, i) => (
@@ -186,7 +191,7 @@ export default function DashboardPage() {
           <Card className="w-full">
             <CardHeader className="space-y-4 sm:space-y-0">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <CardTitle>Goals Overview</CardTitle>
+                <CardTitle>Goals</CardTitle>
                 <GoalsFilters />
               </div>
             </CardHeader>
@@ -198,29 +203,11 @@ export default function DashboardPage() {
                       <GoalOverViewCard key={goal.id} {...goal} />
                     ))
                   ) : (
-                    <GoalsLoading />
+                    <OverviewGoalCardSkeleton />
                   )}
 
                   {/* Empty States */}
-                  {isSearchResultEmpty && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="h-full"
-                    >
-                      <Card className="flex justify-center items-center p-6 sm:p-8 text-center bg-muted/50 h-full">
-                        <div>
-                          <Search className="w-8 h-8 mx-auto text-muted-foreground" />
-                          <p className="mt-4 text-lg font-medium">
-                            No matching goals
-                          </p>
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            Try adjusting your search or filters
-                          </p>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  )}
+                  {isSearchResultEmpty && <NoSearchResults />}
 
                   {isDataEmpty && (
                     <motion.div
@@ -287,17 +274,16 @@ export default function DashboardPage() {
                 <div className="pt-4 space-y-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Active Goals</span>
-                    <span className="font-medium">{activeGoals.length}</span>
+                    <span className="font-medium">{activeGoals}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Completed</span>
-                    <span className="font-medium">{completedGoals.length}</span>
+                    <span className="font-medium">{completedGoals}</span>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-
           {/* Upcoming Deadlines */}
           <Card>
             <CardHeader>
@@ -308,28 +294,21 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4 max-h-[300px] overflow-y-auto scrollbar-thin">
-                {activeGoals
-                  .sort(
-                    (a, b) =>
-                      new Date(a.dueDate).getTime() -
-                      new Date(b.dueDate).getTime()
-                  )
-                  .slice(0, 3)
-                  .map((goal) => (
-                    <div
-                      key={goal.id}
-                      className="flex justify-between items-center"
-                    >
-                      <div>
-                        <p className="font-medium">{goal.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Due {new Date(goal.dueDate).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <Progress value={goal.progress} className="w-20 h-2" />
+                {dueSoonGoals.map((goal) => (
+                  <div
+                    key={goal.id}
+                    className="flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-medium">{goal.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Due {new Date(goal.dueDate).toLocaleDateString()}
+                      </p>
                     </div>
-                  ))}
-                {activeGoals.length === 0 && (
+                    <Progress value={goal.progress} className="w-20 h-2" />
+                  </div>
+                ))}
+                {dueSoonGoals?.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-4">
                     No upcoming deadlines
                   </p>
