@@ -1,4 +1,6 @@
 import Goal from '../models/goalModel.js';
+import Subtask from '../models/subtaskModel.js';
+import mongoose from 'mongoose';
 
 /**
  * Creates a new goal in the database.
@@ -106,6 +108,35 @@ export const updateGoal = async (id, updateData) => {
     new: true,
   });
   return updatedGoal;
+};
+
+/**
+ * Recalculates the overall progress of a goal based on its subtasks,
+ * and updates the goal document in the database.
+ *
+ * @param {string} goalId - The ID of the goal.
+ * @returns {Promise<number>} - The new calculated progress value (rounded to two decimals).
+ */
+export const updateGoalProgress = async (goalId) => {
+  const aggregation = await Subtask.aggregate([
+    { $match: { goal: new mongoose.Types.ObjectId(goalId) } },
+    { $group: { _id: '$goal', avgProgress: { $avg: '$progress' } } },
+  ]);
+
+  let newProgress = 0;
+
+  if (aggregation.length > 0) {
+    newProgress = Number(aggregation[0].avgProgress.toFixed(2));
+  } else {
+    // No subtasks exist. Check if the goal is marked as completed.
+    const goal = await Goal.findById(goalId);
+    if (goal && goal.status === 'completed') {
+      newProgress = 100;
+    }
+  }
+
+  await Goal.findByIdAndUpdate(goalId, { progress: newProgress });
+  return newProgress;
 };
 
 /**

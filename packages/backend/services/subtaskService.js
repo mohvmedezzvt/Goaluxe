@@ -1,5 +1,6 @@
 import Subtask from '../models/subtaskModel.js';
 import Goal from '../models/goalModel.js';
+import { updateGoalProgress } from '../services/goalService.js';
 
 // a maximum allowed limit for subtasks per page.
 const MAX_SUBTASK_LIMIT = 50;
@@ -19,6 +20,7 @@ export const createSubtask = async (goalId, subtaskData) => {
 
   // Create the subtask with a reference to the parent goal.
   const subtask = await Subtask.create({ ...subtaskData, goal: goalId });
+  await updateGoalProgress(goalId);
   return subtask;
 };
 
@@ -94,6 +96,8 @@ export const updateSubtask = async (goalId, subtaskId, updateData) => {
   if (!subtask) {
     throw new Error('Subtask not found or update failed');
   }
+
+  await updateGoalProgress(goalId);
   return subtask;
 };
 
@@ -110,4 +114,6 @@ export const deleteSubtask = async (goalId, subtaskId) => {
   if (result.deletedCount === 0) {
     throw new Error('Subtask not found or already deleted');
   }
+
+  await updateGoalProgress(goalId);
 };

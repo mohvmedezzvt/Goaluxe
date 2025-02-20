@@ -75,6 +75,7 @@ export const updateGoal = async (req, res, next) => {
       return res.status(400).json({ message: 'Goal ID is required' });
     }
 
+    const { progress, ...updateData } = req.body;
     const updateData = req.body;
 
     // If a rewardOptionId is provided, use it as the reward reference.
