@@ -1,8 +1,22 @@
 import Goal from '../models/goalModel.js';
 import mongoose from 'mongoose';
 
-// Common Analytics: shared between dashboard and full analytics.
-const getCommonAnalytics = async (userId) => {
+// Maximum number of "Due Soon" goals allowed per page.
+const MAX_DUE_SOON_LIMIT = 50;
+
+/**
+ * Computes common analytics metrics for a given user.
+ *
+ * @param {string} userId - The ID of the user.
+ * @param {number} dueSoonPage - Page number for due soon goals.
+ * @param {number} dueSoonLimit - Limit for due soon goals per page.
+ * @returns {Object} Common metrics along with totalCount and baseFilter for further calculations.
+ */
+const getCommonAnalytics = async (
+  userId,
+  dueSoonPage = 1,
+  dueSoonLimit = 5
+) => {
   const now = new Date();
   const sevenDaysFromNow = new Date(now);
   sevenDaysFromNow.setDate(now.getDate() + 7);
@@ -32,15 +46,21 @@ const getCommonAnalytics = async (userId) => {
     ? Number(overallProgressAgg[0].avgProgress.toFixed(2))
     : 0;
 
-  // // Due Soon: Count and list of goals with dueDate within the next 7 days
+  dueSoonLimit = Math.min(dueSoonLimit, MAX_DUE_SOON_LIMIT);
+
+  // Due Soon: Count and paginated list of goals with dueDate within the next 7 days
   const dueSoonCount = await Goal.countDocuments({
     ...baseFilter,
     dueDate: { $gte: now, $lte: sevenDaysFromNow },
   });
+  const skip = (dueSoonPage - 1) * dueSoonLimit;
   const dueSoonGoals = await Goal.find({
     ...baseFilter,
     dueDate: { $gte: now, $lte: sevenDaysFromNow },
-  });
+  })
+    .sort({ dueDate: 1 })
+    .skip(skip)
+    .limit(dueSoonLimit);
 
   return {
     activeCount,
@@ -49,11 +69,16 @@ const getCommonAnalytics = async (userId) => {
     dueSoonCount,
     dueSoonGoals,
     totalCount,
-    baseFilter,
   };
 };
 
-// Additional Analytics: only for the full user analytics endpoint.
+/**
+ * Computes additional analytics metrics for full user analytics.
+ *
+ * @param {Object} baseFilter - Filter based on the user.
+ * @param {number} totalCount - Total number of goals for the user.
+ * @returns {Object} Additional metrics.
+ */
 const getAdditionalAnalytics = async (baseFilter, totalCount) => {
   const now = new Date();
 
@@ -94,12 +119,16 @@ const getAdditionalAnalytics = async (baseFilter, totalCount) => {
   };
 };
 
-// Exported functions:
-// 1. getDashboardAnalytics: returns only common (lightweight) metrics.
-// 2. getUserAnalytics: returns common metrics plus additional metrics.
-//
-export const getDashboardAnalytics = async (userId) => {
-  const common = await getCommonAnalytics(userId);
+/**
+ * Returns lightweight dashboard analytics.
+ * Excludes additional internal metrics.
+ */
+export const getDashboardAnalytics = async (
+  userId,
+  dueSoonPage = 1,
+  dueSoonLimit = 10
+) => {
+  const common = await getCommonAnalytics(userId, dueSoonPage, dueSoonLimit);
   // We remove totalCount and baseFilter from the response
   const {
     totalCount /* eslint-disable-line no-unused-vars */,
@@ -109,8 +138,15 @@ export const getDashboardAnalytics = async (userId) => {
   return dashboardAnalytics;
 };
 
-export const getUserAnalytics = async (userId) => {
-  const common = await getCommonAnalytics(userId);
+/**
+ * Returns full user analytics (dashboard analytics plus additional metrics).
+ */
+export const getUserAnalytics = async (
+  userId,
+  dueSoonPage = 1,
+  dueSoonLimit = 10
+) => {
+  const common = await getCommonAnalytics(userId, dueSoonPage, dueSoonLimit);
   const { totalCount, baseFilter, ...commonMetrics } = common;
   const additional = await getAdditionalAnalytics(baseFilter, totalCount);
   return { ...commonMetrics, ...additional };
