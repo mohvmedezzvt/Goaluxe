@@ -10,11 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { cn, validateDueDate } from "@/lib/utils";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
 
 interface AddGoalDialogProps {
   open: boolean;
@@ -85,7 +87,7 @@ export function AddGoalDialog({ open, onOpenChange }: AddGoalDialogProps) {
     description: "",
     dueDate: "",
   });
-
+  const [isDateError, setIsDateError] = useState(false);
   const { mutate, isPending } = useMutation({
     mutationFn: async (formData: {
       title: string;
@@ -96,8 +98,22 @@ export function AddGoalDialog({ open, onOpenChange }: AddGoalDialogProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["Goals"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
     },
   });
+
+  const handleSetDueDate = (dueDate: string) => {
+    const dateValidation = validateDueDate(dueDate);
+    if (dateValidation) {
+      setFormData((prev) => ({
+        ...prev,
+        dueDate: dueDate, // Ensure `dueDate` remains a string
+      }));
+      setIsDateError(false);
+    } else {
+      setIsDateError(true);
+    }
+  };
 
   /**
    * Handles form submission.
@@ -125,7 +141,7 @@ export function AddGoalDialog({ open, onOpenChange }: AddGoalDialogProps) {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="dueDate">Title</Label>
               <Input
                 id="title"
                 value={formData.title}
@@ -137,7 +153,7 @@ export function AddGoalDialog({ open, onOpenChange }: AddGoalDialogProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="dueDate">Description</Label>
               <Textarea
                 id="description"
                 value={formData.description}
@@ -157,14 +173,13 @@ export function AddGoalDialog({ open, onOpenChange }: AddGoalDialogProps) {
                 id="dueDate"
                 type="date"
                 value={formData.dueDate}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    dueDate: e.target.value,
-                  }))
-                }
+                className={cn(isDateError ? "text-red-500 border-red-500" : "")}
+                onChange={(e) => handleSetDueDate(e.target.value)}
                 required
               />
+              {isDateError && (
+                <p className="text-red-500">Due date cannot be in the past.</p>
+              )}
             </div>
           </div>
           <DialogFooter>

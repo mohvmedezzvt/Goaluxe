@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { cn, validateDueDate } from "@/lib/utils";
 
 interface EditGoalDialogProps {
   goalId: string;
@@ -80,7 +81,8 @@ export function EditGoalDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["Goals"] });
-      queryClient.invalidateQueries({ queryKey: ["Goal", goalId] });
+      queryClient.invalidateQueries({ queryKey: ["Goal"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
     },
   });
 
@@ -99,6 +101,20 @@ export function EditGoalDialog({
     status: "active" as Goal["status"],
   });
 
+  const [isDateError, setIsDateError] = useState(false);
+
+  const handleSetDueDate = (dueDate: string) => {
+    const dateValidation = validateDueDate(dueDate);
+    if (dateValidation) {
+      setFormData((prev) => ({
+        ...prev,
+        dueDate: dueDate, // Ensure `dueDate` remains a string
+      }));
+      setIsDateError(false);
+    } else {
+      setIsDateError(true);
+    }
+  };
   useEffect(() => {
     if (goal) {
       setFormData({
@@ -164,15 +180,14 @@ export function EditGoalDialog({
               <Input
                 id="dueDate"
                 type="date"
+                className={cn(isDateError ? "border-red-500 text-red-500" : "")}
                 value={formData.dueDate}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    dueDate: e.target.value,
-                  }))
-                }
+                onChange={(e) => handleSetDueDate(e.target.value)}
                 required
               />
+              {isDateError && (
+                <p className="text-red-500">Due date cannot be in the past.</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="progress">Progress (%)</Label>
