@@ -1,0 +1,24 @@
+meta {
+  name: Retrieve All Subtasks
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:3001/api/goals/:goalId/subtasks
+  body: none
+  auth: none
+}
+
+params:query {
+  ~page: 1
+  ~limit: 10
+}
+
+params:path {
+  goalId: 67b3370ccbdc67af842a5010
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}

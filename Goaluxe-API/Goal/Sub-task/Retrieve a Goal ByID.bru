@@ -1,0 +1,26 @@
+meta {
+  name: Retrieve a Goal ByID
+  type: http
+  seq: 4
+}
+
+patch {
+  url: http://localhost:3001/api/goals/:goalId/subtasks/:subtaskId
+  body: json
+  auth: none
+}
+
+params:path {
+  goalId: 67b3370ccbdc67af842a5010
+  subtaskId: 67b73dc14096952bbea47728
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}
+
+body:json {
+  {
+    "status": "in-progress"
+  }
+}

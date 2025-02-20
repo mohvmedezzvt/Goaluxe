@@ -1,0 +1,27 @@
+meta {
+  name: Create Subtask
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:3001/api/goals/:goalId/subtasks
+  body: json
+  auth: none
+}
+
+params:path {
+  goalId: 67b3370ccbdc67af842a5010
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}
+
+body:json {
+  {
+    "title": "Draft initial design",
+    "description": "Create wireframes for the homepage and dashboard.",
+    "dueDate": "2025-03-15T00:00:00.000Z"
+  }
+}
