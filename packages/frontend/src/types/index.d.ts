@@ -9,12 +9,18 @@ interface Goal {
   id: string;
   title: string;
   description: string;
-  dueDate: Date;
+  dueDate: Date | string;
   progress: number;
   status: "active" | "completed" | "cancelled";
-  createdAt: Date;
+  createdAt: Date | string;
 }
-
+interface Analytics {
+  activeCount: number;
+  completedCount: number;
+  overallProgress: number;
+  dueSoonCount: number;
+  dueSoonGoals: Goal[];
+}
 interface URLParams {
   title: string | null;
   page: number;
