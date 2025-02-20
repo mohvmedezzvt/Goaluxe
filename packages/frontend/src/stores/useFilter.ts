@@ -50,7 +50,6 @@ export const useInitializeFilterFromURL = () => {
     setSearch(searchParam);
     setStatus(statusParam);
     setOrder(orderParam || "desc"); // Default to "desc" if no order is provided.
-    console.log(statusParam);
   }, [params]);
 };
 
