@@ -13,7 +13,7 @@ export function GoalsAnalytics({ goals }: GoalsAnalyticsProps) {
   const monthlyCompletion = goals.reduce(
     (acc, goal) => {
       if (goal.status === "completed") {
-        const month = new Date(goal.targetDate).toLocaleString("default", {
+        const month = new Date(goal.dueDate).toLocaleString("default", {
           month: "short",
         });
         acc[month] = (acc[month] || 0) + 1;

@@ -1,0 +1,15 @@
+meta {
+  name: Dashboard Analytics
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:3001/api/analytics/dashboard
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}

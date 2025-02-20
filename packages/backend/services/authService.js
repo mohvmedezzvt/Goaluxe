@@ -140,7 +140,7 @@ export const refreshAccessToken = async (refreshToken) => {
     );
 
     return { token: newAccessToken };
-  } catch (error) {
+  } catch (error /* eslint-disable-line no-unused-vars */) {
     throw new Error('Invalid or expired refresh token');
   }
 };

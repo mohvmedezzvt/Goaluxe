@@ -1,9 +1,7 @@
-"use client";
+import { Skeleton } from "@heroui/react";
+import { Card, CardContent, CardHeader } from "../ui/card";
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-
-export function GoalsLoading() {
+export function OverviewGoalCardSkeleton() {
   return (
     <>
       {[1, 2, 3].map((i) => (

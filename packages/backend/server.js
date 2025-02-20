@@ -36,11 +36,11 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: '*', // use process.env.CLIENT_URL || '*'
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-    optionsSuccessStatus: 204,
+    origin: 'http://localhost:3000', // Use environment variable or allow all origins
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
+    allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+    credentials: true, // Allow credentials (cookies, authorization headers)
+    optionsSuccessStatus: 204, // Set status code for successful OPTIONS requests
   })
 );
 

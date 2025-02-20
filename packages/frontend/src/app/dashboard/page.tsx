@@ -1,16 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useGoals } from "@/hooks/use-goals";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Plus,
-  Pencil,
-  Trash2,
   Target,
-  Search,
   Calendar,
   BarChart3,
   Clock,
@@ -20,9 +16,12 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { AddGoalDialog } from "@/components/goals/add-goal-dialog";
 import { EditGoalDialog } from "@/components/goals/edit-goal-dialog";
-import { Loading } from "@/components/ui/loading";
-import { GoalsFilters } from "@/components/goals/goals-filters";
+import {
+  GoalsFilters,
+  NoSearchResults,
+} from "@/components/goals/goals-filters";
 import { motion, AnimatePresence } from "framer-motion";
+import { Pagination } from "@heroui/pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,39 +33,92 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import useEdit from "@/stores/useEdit";
+import GoalOverViewCard from "@/components/goals/goal-overview-card";
+import { useDeleteGoal } from "@/hooks/use-delete-goal";
+import { useSearchParamsHook } from "@/hooks/use-search-params";
+import { useGoalsQuery } from "@/hooks/use-goals-query";
+import { OverviewGoalCardSkeleton } from "@/components/skeleton/overview-goal-card";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
+/**
+ * DashboardPage component is the main dashboard view for the application.
+ * It displays an overview of the user's goals, including active, completed, and upcoming goals.
+ * It also provides functionalities to add, edit, and delete goals.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered DashboardPage component.
+ *
+ * @example
+ * ```tsx
+ * import DashboardPage from './path/to/DashboardPage';
+ *
+ * function App() {
+ *   return <DashboardPage />;
+ * }
+ * ```
+ *
+ * @remarks
+ * This component uses several hooks and components from the application:
+ * - `useAuth` to get the current user.
+ * - `useSearchParams` to get query parameters from the URL.
+ * - `useGoalsQuery` to fetch goals data from the API.
+ * - `useDeleteGoal` to handle goal deletion.
+ * - `useEdit` to manage goal editing state.
+ * - `useState` to manage local state for dialogs.
+ *
+ * The component is divided into several sections:
+ * - Header Section: Displays a welcome message and a button to add a new goal.
+ * - Quick Stats: Shows quick statistics about active goals, completed goals, overall progress, and upcoming deadlines.
+ * - Main Content Grid: Contains the goals list and a sidebar with progress overview and upcoming deadlines.
+ * - Dialogs: Includes dialogs for adding, editing, and deleting goals.
+ */
 export default function DashboardPage() {
-  const { user } = useAuth();
-  const { goals, loading, deleteGoal } = useGoals();
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [editingGoal, setEditingGoal] = useState<string | null>(null);
-  const [deletingGoal, setDeletingGoal] = useState<string | null>(null);
-  const [filteredGoals, setFilteredGoals] = useState(goals);
+  const { user } = useAuth(); // Get the authenticated user
+  const { handleDeleteGoal, isDeleting } = useDeleteGoal(); // Hook for deleting goals
+  const { isEditing, setEdit } = useEdit(); // Hook for managing edit state
+  const [showAddDialog, setShowAddDialog] = useState(false); // State for controlling the Add Goal dialog
 
-  console.log(goals);
-  useEffect(() => {
-    setFilteredGoals(goals);
-  }, [goals]);
+  // Extract query parameters for filtering and pagination
+  const { title, page, status, sortBy, order, handlePagination } =
+    useSearchParamsHook();
 
-  if (loading) {
-    return <Loading />;
-  }
+  // Fetch goals analytics using `react-query`
 
-  const activeGoals = goals.filter((goal) => goal.status === "active");
-  const completedGoals = goals.filter((goal) => goal.status === "completed");
-  const averageProgress = Number.isNaN(goals.length)
-    ? goals.reduce((acc, goal) => acc + goal.progress, 0) / goals.length
-    : 0;
+  const { data: analytics, isPending: loading } = useQuery({
+    queryKey: ["analytics"],
+    queryFn: async () => {
+      return (await api.get<Analytics>("/analytics/dashboard")).data;
+    },
+  });
 
-  const handleDeleteGoal = async () => {
-    if (deletingGoal) {
-      await deleteGoal(deletingGoal);
-      setDeletingGoal(null);
-    }
-  };
+  // Fetch goals using `react-query`
+  const { data: Goals, isPending } = useGoalsQuery({
+    title,
+    page,
+    status,
+    sortBy,
+    order,
+  });
+
+  // Extract goals data from the response
+  const goals = Goals?.data?.data || [];
+  const totalPages = Goals?.data?.totalPages || 0;
+
+  // Categorize goals into active and completed
+  const activeGoals = analytics?.activeCount;
+  const dueSoonGoals = analytics?.dueSoonGoals || [];
+  const completedGoals = analytics?.completedCount || 0;
+
+  // Calculate the average progress of all goals
+  const averageProgress = analytics?.overallProgress || 0;
+
+  const isDataEmpty = !isPending && !title && !status && goals.length === 0;
+  const isSearchResultEmpty = (title || status) && goals.length === 0;
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500">
-      {/* Header Section - Improved mobile layout */}
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500 max-w-[1400px] mx-auto">
+      {/* Header Section */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -86,19 +138,19 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      {/* Quick Stats - Better mobile grid */}
+      {/* Quick Stats Section */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         {[
           {
             icon: <Target className="h-5 w-5 text-primary" />,
             label: "Active Goals",
-            value: activeGoals.length,
+            value: activeGoals,
             bgColor: "bg-primary/10",
           },
           {
             icon: <CheckCircle2 className="h-5 w-5 text-green-600" />,
             label: "Completed",
-            value: completedGoals.length,
+            value: completedGoals,
             bgColor: "bg-green-100 dark:bg-green-900/20",
           },
           {
@@ -110,19 +162,13 @@ export default function DashboardPage() {
           {
             icon: <Clock className="h-5 w-5 text-orange-600" />,
             label: "Due Soon",
-            value: activeGoals.filter((g) => {
-              const daysLeft = Math.ceil(
-                (new Date(g.targetDate).getTime() - new Date().getTime()) /
-                  (1000 * 60 * 60 * 24)
-              );
-              return daysLeft <= 7 && daysLeft > 0;
-            }).length,
+            value: dueSoonGoals.length,
             bgColor: "bg-orange-100 dark:bg-orange-900/20",
           },
         ].map((stat, i) => (
           <Card key={i} className="hover:shadow-md transition-all">
             <CardContent className="p-4 sm:pt-6">
-              <div className="flex  gap-3">
+              <div className="flex gap-3">
                 <div className={cn("h-fit p-2 rounded-lg", stat.bgColor)}>
                   {stat.icon}
                 </div>
@@ -138,140 +184,54 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Main Content Grid - Responsive layout */}
+      {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-6">
         {/* Goals List Section */}
-        <div className="lg:col-span-4 space-y-6">
-          <Card>
+        <div className="lg:col-span-4 space-y-6 flex flex-col items-center">
+          <Card className="w-full">
             <CardHeader className="space-y-4 sm:space-y-0">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <CardTitle>Goals Overview</CardTitle>
-                <GoalsFilters
-                  goals={goals}
-                  onFilterChange={setFilteredGoals}
-                  onSortChange={setFilteredGoals}
-                />
+                <CardTitle>Goals</CardTitle>
+                <GoalsFilters />
               </div>
             </CardHeader>
             <CardContent>
               <AnimatePresence mode="popLayout">
-                <div className="space-y-4">
-                  {filteredGoals.map((goal) => (
-                    <motion.div
-                      key={goal._id}
-                      layout
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Card className="hover:shadow-md transition-all duration-200 group">
-                        <CardContent className="p-4">
-                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                            <div className="flex-1 space-y-3">
-                              <div>
-                                <h3 className="font-medium group-hover:text-primary transition-colors">
-                                  {goal.title}
-                                </h3>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {goal.description}
-                                </p>
-                              </div>
-                              <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-muted-foreground">
-                                    Progress
-                                  </span>
-                                  <span>{goal.progress}%</span>
-                                </div>
-                                <Progress
-                                  value={goal.progress}
-                                  className="h-2"
-                                />
-                              </div>
-                            </div>
-                            <div className="flex sm:flex-col items-center sm:items-end justify-between sm:gap-4">
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => setEditingGoal(goal._id)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => setDeletingGoal(goal._id)}
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3 text-sm">
-                                <span
-                                  className={cn(
-                                    "px-2 py-1 rounded-full text-xs whitespace-nowrap",
-                                    goal.status === "active" &&
-                                      "bg-green-100 text-green-700",
-                                    goal.status === "completed" &&
-                                      "bg-blue-100 text-blue-700",
-                                    goal.status === "archived" &&
-                                      "bg-gray-100 text-gray-700"
-                                  )}
-                                >
-                                  {goal.status}
-                                </span>
-                                <span className="text-muted-foreground whitespace-nowrap">
-                                  Due{" "}
-                                  {new Date(
-                                    goal.targetDate
-                                  ).toLocaleDateString()}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-
-                  {/* Empty States - Centered on mobile */}
-                  {filteredGoals.length === 0 && goals.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <Card className="p-6 sm:p-8 text-center bg-muted/50">
-                        <Search className="w-8 h-8 mx-auto text-muted-foreground" />
-                        <p className="mt-4 text-lg font-medium">
-                          No matching goals
-                        </p>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          Try adjusting your search or filters
-                        </p>
-                      </Card>
-                    </motion.div>
+                <div className="space-y-4 h-[calc(100vh-32.5rem)] overflow-y-auto">
+                  {!isPending ? (
+                    goals.map((goal) => (
+                      <GoalOverViewCard key={goal.id} {...goal} />
+                    ))
+                  ) : (
+                    <OverviewGoalCardSkeleton />
                   )}
 
-                  {goals.length === 0 && (
+                  {/* Empty States */}
+                  {isSearchResultEmpty && <NoSearchResults />}
+
+                  {isDataEmpty && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
+                      className="h-full"
                     >
-                      <Card className="p-8 text-center bg-muted/50">
-                        <Target className="w-8 h-8 mx-auto text-muted-foreground" />
-                        <p className="mt-4 text-lg font-medium">No goals yet</p>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          Start by adding your first goal!
-                        </p>
-                        <Button
-                          onClick={() => setShowAddDialog(true)}
-                          className="mt-4"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Your First Goal
-                        </Button>
+                      <Card className="flex justify-center items-center p-8 text-center bg-muted/50 h-full">
+                        <div>
+                          <Target className="w-8 h-8 mx-auto text-muted-foreground" />
+                          <p className="mt-4 text-lg font-medium">
+                            No goals yet
+                          </p>
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            Start by adding your first goal!
+                          </p>
+                          <Button
+                            onClick={() => setShowAddDialog(true)}
+                            className="mt-4"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Your First Goal
+                          </Button>
+                        </div>
                       </Card>
                     </motion.div>
                   )}
@@ -279,9 +239,18 @@ export default function DashboardPage() {
               </AnimatePresence>
             </CardContent>
           </Card>
+          {totalPages >= 2 && (
+            <Pagination
+              className="bg-default-100 rounded-2xl"
+              total={totalPages || 0}
+              page={page}
+              initialPage={1}
+              onChange={(page) => handlePagination(page)}
+            />
+          )}
         </div>
 
-        {/* Sidebar - Horizontal scroll on mobile */}
+        {/* Sidebar Section */}
         <div className="lg:col-span-2 space-y-6">
           {/* Progress Overview */}
           <Card>
@@ -305,18 +274,17 @@ export default function DashboardPage() {
                 <div className="pt-4 space-y-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Active Goals</span>
-                    <span className="font-medium">{activeGoals.length}</span>
+                    <span className="font-medium">{activeGoals}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Completed</span>
-                    <span className="font-medium">{completedGoals.length}</span>
+                    <span className="font-medium">{completedGoals}</span>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          {/* Upcoming Deadlines - Scrollable on mobile */}
+          {/* Upcoming Deadlines */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -326,28 +294,21 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4 max-h-[300px] overflow-y-auto scrollbar-thin">
-                {activeGoals
-                  .sort(
-                    (a, b) =>
-                      new Date(a.targetDate).getTime() -
-                      new Date(b.targetDate).getTime()
-                  )
-                  .slice(0, 3)
-                  .map((goal) => (
-                    <div
-                      key={goal._id}
-                      className="flex justify-between items-center"
-                    >
-                      <div>
-                        <p className="font-medium">{goal.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Due {new Date(goal.targetDate).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <Progress value={goal.progress} className="w-20 h-2" />
+                {dueSoonGoals.map((goal) => (
+                  <div
+                    key={goal.id}
+                    className="flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-medium">{goal.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Due {new Date(goal.dueDate).toLocaleDateString()}
+                      </p>
                     </div>
-                  ))}
-                {activeGoals.length === 0 && (
+                    <Progress value={goal.progress} className="w-20 h-2" />
+                  </div>
+                ))}
+                {dueSoonGoals?.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-4">
                     No upcoming deadlines
                   </p>
@@ -361,18 +322,15 @@ export default function DashboardPage() {
       {/* Dialogs */}
       <AddGoalDialog open={showAddDialog} onOpenChange={setShowAddDialog} />
 
-      {editingGoal && (
+      {isEditing && (
         <EditGoalDialog
-          goalId={editingGoal}
+          goalId={isEditing}
           open={true}
-          onOpenChange={() => setEditingGoal(null)}
+          onOpenChange={() => setEdit(null)}
         />
       )}
 
-      <AlertDialog
-        open={!!deletingGoal}
-        onOpenChange={() => setDeletingGoal(null)}
-      >
+      <AlertDialog open={!!isDeleting}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>

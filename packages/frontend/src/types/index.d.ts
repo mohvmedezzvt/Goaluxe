@@ -6,13 +6,27 @@ interface User {
 }
 
 interface Goal {
-  _id: string;
+  id: string;
   title: string;
   description: string;
-  targetDate: Date;
+  dueDate: Date | string;
   progress: number;
-  status: "active" | "completed" | "archived";
-  createdAt: Date;
+  status: "active" | "completed" | "cancelled";
+  createdAt: Date | string;
+}
+interface Analytics {
+  activeCount: number;
+  completedCount: number;
+  overallProgress: number;
+  dueSoonCount: number;
+  dueSoonGoals: Goal[];
+}
+interface URLParams {
+  title: string | null;
+  page: number;
+  order: "desc" | "asc";
+  status: string | null;
+  sortBy: "title" | "dueDate" | "progress" | null;
 }
 
 interface Reward {
