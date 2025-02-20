@@ -101,8 +101,11 @@ const getAdditionalAnalytics = async (baseFilter, totalCount) => {
 export const getDashboardAnalytics = async (userId) => {
   const common = await getCommonAnalytics(userId);
   // We remove totalCount and baseFilter from the response
-  /* eslint-disable-line no-unused-vars */
-  const { totalCount, baseFilter, ...dashboardAnalytics } = common;
+  const {
+    totalCount /* eslint-disable-line no-unused-vars */,
+    baseFilter /* eslint-disable-line no-unused-vars */,
+    ...dashboardAnalytics
+  } = common;
   return dashboardAnalytics;
 };
 
