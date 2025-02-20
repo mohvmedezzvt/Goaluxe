@@ -15,7 +15,7 @@ export function useSearchParamsHook(): URLParams & {
   const title = searchParams.get("title") || null;
   const status = searchParams.get("status") || null;
   const sortBy = (searchParams.get("sortBy") as URLParams["sortBy"]) ?? null;
-  const page = Number(searchParams.get("page")) || 1;
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
   const order = searchParams.get("order") as URLParams["order"];
 
   /**
