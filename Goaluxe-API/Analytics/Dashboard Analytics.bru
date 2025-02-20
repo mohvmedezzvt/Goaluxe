@@ -10,6 +10,11 @@ get {
   auth: none
 }
 
+params:query {
+  ~dueSoonPage: 1
+  ~dueSoonLimit: 5
+}
+
 headers {
   Authorization: Bearer {{access_token}}
 }
