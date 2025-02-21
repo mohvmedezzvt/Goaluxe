@@ -97,6 +97,9 @@ importers:
 
   packages/frontend:
     dependencies:
+      '@heroicons/react':
+        specifier: ^2.2.0
+        version: 2.2.0(react@19.0.0)
       '@heroui/input':
         specifier: ^2.4.13
         version: 2.4.13(@heroui/system@2.4.10(@heroui/theme@2.4.9(tailwindcss@3.4.17))(framer-motion@12.4.4(@emotion/is-prop-valid@1.2.2)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(@heroui/theme@2.4.9(tailwindcss@3.4.17))(@types/react@19.0.10)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -892,6 +895,11 @@ packages:
 
   '@hapi/topo@5.1.0':
     resolution: {integrity: sha512-foQZKJig7Ob0BMAYBfcJk8d77QtOe7Wo4ox7ff1lQYoNNAb6jwcY1ncdoy2e9wQZzvNy7ODZCYJkK8kzmcAnAg==}
+
+  '@heroicons/react@2.2.0':
+    resolution: {integrity: sha512-LMcepvRaS9LYHJGsF0zzmgKCUim/X3N/DQKc4jepAXJ7l8QxJ1PmxJzqplF2Z3FE4PqBAIGyJAQ/w4B5dsqbtQ==}
+    peerDependencies:
+      react: '>= 16 || ^19.0.0-rc'
 
   '@heroui/accordion@2.2.11':
     resolution: {integrity: sha512-XQRl+eXqJgfx6OFe7QPCvepKOvy5DFfZ8XUmVuc9ptvxAyifgYhT276ro+xJyQSypRzLDpLFnweuZuBg4Vwu+Q==}
@@ -7794,6 +7802,10 @@ snapshots:
   '@hapi/topo@5.1.0':
     dependencies:
       '@hapi/hoek': 9.3.0
+
+  '@heroicons/react@2.2.0(react@19.0.0)':
+    dependencies:
+      react: 19.0.0
 
   '@heroui/accordion@2.2.11(@heroui/system@2.4.10(@heroui/theme@2.4.9(tailwindcss@3.4.17))(framer-motion@12.4.4(@emotion/is-prop-valid@1.2.2)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(@heroui/theme@2.4.9(tailwindcss@3.4.17))(framer-motion@12.4.4(@emotion/is-prop-valid@1.2.2)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
     dependencies:
