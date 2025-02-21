@@ -80,4 +80,7 @@ rewardSchema.set('toJSON', {
   },
 });
 
+rewardSchema.index({ public: 1 });
+rewardSchema.index({ createdBy: 1 });
+
 export default mongoose.model('Reward', rewardSchema);

@@ -66,4 +66,6 @@ goalSchema.set('toJSON', {
   },
 });
 
+goalSchema.index({ user: 1, status: 1, dueDate: 1 });
+
 export default mongoose.model('Goal', goalSchema);
