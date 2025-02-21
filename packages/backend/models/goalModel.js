@@ -34,7 +34,6 @@ const goalSchema = new Schema(
     progress: {
       type: Number,
       default: 0,
-      immutable: true,
     },
     // Indicates the status of the goal (defaults to 'active')
     status: {

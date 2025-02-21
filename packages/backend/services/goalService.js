@@ -118,21 +118,30 @@ export const updateGoal = async (id, updateData) => {
  * @returns {Promise<number>} - The new calculated progress value (rounded to two decimals).
  */
 export const updateGoalProgress = async (goalId) => {
-  const aggregation = await Subtask.aggregate([
-    { $match: { goal: new mongoose.Types.ObjectId(goalId) } },
-    { $group: { _id: '$goal', avgProgress: { $avg: '$progress' } } },
-  ]);
+  // First, retrieve the goal to check its status.
+  const goal = await Goal.findById(goalId);
+  if (!goal) throw new Error('Goal not found');
+
+  // Count the number of subtasks for this goal.
+  const subtaskCount = await Subtask.countDocuments({
+    goal: new mongoose.Types.ObjectId(goalId),
+  });
 
   let newProgress = 0;
 
-  if (aggregation.length > 0) {
-    newProgress = Number(aggregation[0].avgProgress.toFixed(2));
+  if (subtaskCount === 0) {
+    newProgress = goal.status === 'completed' ? 100 : 0;
   } else {
-    // No subtasks exist. Check if the goal is marked as completed.
-    const goal = await Goal.findById(goalId);
-    if (goal && goal.status === 'completed') {
-      newProgress = 100;
-    }
+    // If there are subtasks, calculate the average progress.
+    const aggregation = await Subtask.aggregate([
+      { $match: { goal: new mongoose.Types.ObjectId(goalId) } },
+      { $group: { _id: '$goal', avgProgress: { $avg: '$progress' } } },
+    ]);
+
+    newProgress =
+      aggregation.length > 0
+        ? Number(aggregation[0].avgProgress.toFixed(2))
+        : 0;
   }
 
   await Goal.findByIdAndUpdate(goalId, { progress: newProgress });
