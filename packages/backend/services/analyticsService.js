@@ -1,4 +1,5 @@
 import Goal from '../models/goalModel.js';
+import Subtask from '../models/subtaskModel.js';
 import mongoose from 'mongoose';
 
 // Maximum number of "Due Soon" goals allowed per page.
@@ -8,8 +9,8 @@ const MAX_DUE_SOON_LIMIT = 50;
  * Computes common analytics metrics for a given user.
  *
  * @param {string} userId - The ID of the user.
- * @param {number} dueSoonPage - Page number for due soon goals.
- * @param {number} dueSoonLimit - Limit for due soon goals per page.
+ * @param {number} dueSoonPage - Page number for due soon subtasks.
+ * @param {number} dueSoonLimit - Limit for due soon subtasks per page.
  * @returns {Object} Common metrics along with totalCount and baseFilter for further calculations.
  */
 const getCommonAnalytics = async (
@@ -20,26 +21,25 @@ const getCommonAnalytics = async (
   const now = new Date();
   const sevenDaysFromNow = new Date(now);
   sevenDaysFromNow.setDate(now.getDate() + 7);
-  const baseFilter = { user: new mongoose.Types.ObjectId(userId) };
 
   // Active Goals Count
   const activeCount = await Goal.countDocuments({
-    ...baseFilter,
+    user: new mongoose.Types.ObjectId(userId),
     status: 'active',
   });
 
   // Completed Goals Count
   const completedCount = await Goal.countDocuments({
-    ...baseFilter,
+    user: new mongoose.Types.ObjectId(userId),
     status: 'completed',
   });
 
   // Total Goals Count
-  const totalCount = await Goal.countDocuments({ ...baseFilter });
+  const totalCount = await Goal.countDocuments({ user: userId });
 
   // Overall Progress (average progress across all goals)
   const overallProgressAgg = await Goal.aggregate([
-    { $match: baseFilter },
+    { $match: { user: new mongoose.Types.ObjectId(userId) } },
     { $group: { _id: null, avgProgress: { $avg: '$progress' } } },
   ]);
   const overallProgress = overallProgressAgg[0]
@@ -48,16 +48,24 @@ const getCommonAnalytics = async (
 
   dueSoonLimit = Math.min(dueSoonLimit, MAX_DUE_SOON_LIMIT);
   dueSoonPage = Math.max(Number(dueSoonPage) || 1, 1);
-
-  // Due Soon: Count and paginated list of goals with dueDate within the next 7 days
-  const dueSoonCount = await Goal.countDocuments({
-    ...baseFilter,
-    dueDate: { $gte: now, $lte: sevenDaysFromNow },
-  });
   const skip = (dueSoonPage - 1) * dueSoonLimit;
-  const dueSoonGoals = await Goal.find({
-    ...baseFilter,
+
+  // Find all goals that belong to the user
+  const userGoals = await Goal.find({ user: userId }).select('_id');
+  const goalIds = userGoals.map((goal) => goal._id);
+
+  const dueSoonGoalIds = await Subtask.distinct('goal', {
+    goal: { $in: goalIds },
     dueDate: { $gte: now, $lte: sevenDaysFromNow },
+    status: { $ne: 'completed' },
+  });
+
+  const dueSoonCount = dueSoonGoalIds.length;
+
+  const dueSoonSubtasks = await Subtask.find({
+    goal: { $in: dueSoonGoalIds },
+    dueDate: { $gte: now, $lte: sevenDaysFromNow },
+    status: { $ne: 'completed' },
   })
     .sort({ dueDate: 1 })
     .skip(skip)
@@ -68,9 +76,8 @@ const getCommonAnalytics = async (
     completedCount,
     overallProgress,
     dueSoonCount,
-    dueSoonGoals,
+    dueSoonSubtasks,
     totalCount,
-    baseFilter,
   };
 };
 
@@ -134,7 +141,6 @@ export const getDashboardAnalytics = async (
   // We remove totalCount and baseFilter from the response
   const {
     totalCount /* eslint-disable-line no-unused-vars */,
-    baseFilter /* eslint-disable-line no-unused-vars */,
     ...dashboardAnalytics
   } = common;
   return dashboardAnalytics;
@@ -149,7 +155,7 @@ export const getUserAnalytics = async (
   dueSoonLimit = 10
 ) => {
   const common = await getCommonAnalytics(userId, dueSoonPage, dueSoonLimit);
-  const { totalCount, baseFilter, ...commonMetrics } = common;
-  const additional = await getAdditionalAnalytics(baseFilter, totalCount);
+  const { totalCount, ...commonMetrics } = common;
+  const additional = await getAdditionalAnalytics({ user: userId }, totalCount);
   return { ...commonMetrics, ...additional };
 };

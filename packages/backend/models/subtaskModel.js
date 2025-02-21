@@ -44,4 +44,7 @@ subtaskSchema.set('toJSON', {
   },
 });
 
+subtaskSchema.index({ goal: 1, dueDate: 1, status: 1 });
+subtaskSchema.index({ goal: 1, createdAt: -1 });
+
 export default mongoose.model('Subtask', subtaskSchema);
