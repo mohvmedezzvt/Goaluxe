@@ -75,7 +75,8 @@ export const updateGoal = async (req, res, next) => {
       return res.status(400).json({ message: 'Goal ID is required' });
     }
 
-    const { progress, ...updateData } = req.body;
+    const { progress /* eslint-disable-line no-unused-vars */, ...updateData } =
+      req.body;
 
     // If a rewardOptionId is provided, use it as the reward reference.
     if (updateData.rewardOptionId) {
@@ -93,10 +94,19 @@ export const updateGoal = async (req, res, next) => {
       });
     }
 
+    // eslint-disable-next-line no-unused-vars
     const updatedGoal = await goalService.updateGoal(id, updateData);
-    await updatedGoal.populate('reward');
 
-    res.status(200).json(updatedGoal);
+    // If the status is being updated to 'completed', recalculate the progress.
+    if (updateData.status) {
+      await goalService.updateGoalProgress(id);
+    }
+
+    // re-fetch the goal to get the updated progress.
+    const refreshedGoal = await goalService.getGoalById(id);
+    await refreshedGoal.populate('reward');
+
+    res.status(200).json(refreshedGoal);
   } catch (error) {
     next(error);
   }
