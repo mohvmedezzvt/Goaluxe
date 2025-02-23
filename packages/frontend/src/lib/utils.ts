@@ -18,3 +18,19 @@ export function validateDueDate(dueDate: string): boolean {
 
   return true; // Valid due date
 }
+
+function limitCharacters({
+  str,
+  maxLength,
+}: {
+  str: string;
+  maxLength: number;
+}): string {
+  if (typeof str !== "string") {
+    throw new TypeError("Input must be a string");
+  }
+
+  return str.length > maxLength ? str.slice(0, maxLength) + "..." : str;
+}
+
+export default limitCharacters;
