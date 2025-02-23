@@ -1,6 +1,7 @@
 import { api } from "@/lib/api";
 import useDelete from "@/stores/useDelete";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 /**
  * Custom hook to handle deleting a goal.
@@ -11,7 +12,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 export function useDeleteGoal() {
   const queryClient = useQueryClient();
   const { isDeleting, setDelete } = useDelete();
-
+  const router = useRouter();
   /**
    * Mutation for deleting a goal.
    *
@@ -19,13 +20,14 @@ export function useDeleteGoal() {
    * - Calls API to delete the goal.
    * - Invalidates queries to refresh goal-related data.
    */
-  const mutation = useMutation({
+  const { mutate, isPending: deleteLoading } = useMutation({
     mutationKey: [`Goal-delete-${isDeleting}`],
     mutationFn: async (deletingGoal: string) =>
       api.delete(`goals/${deletingGoal}`),
     onSuccess: () => {
+      setDelete(null); // Only close modal after successful deletion
+      router.push("/dashboard");
       queryClient.invalidateQueries({ queryKey: ["Goals"] });
-      queryClient.invalidateQueries({ queryKey: ["GoalsPage"] });
     },
   });
 
@@ -35,10 +37,9 @@ export function useDeleteGoal() {
    */
   const handleDeleteGoal = async () => {
     if (isDeleting) {
-      mutation.mutate(isDeleting);
-      setDelete(null);
+      mutate(isDeleting);
     }
   };
 
-  return { handleDeleteGoal, isDeleting };
+  return { handleDeleteGoal, deleteLoading };
 }
