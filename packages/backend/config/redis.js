@@ -4,48 +4,71 @@ class RedisService {
   constructor() {
     this.client = createClient({
       url: process.env.REDIS_URL || 'redis://localhost:6379',
+      pingInterval: 10_000, // Keep connection alive
     });
+    this.connected = false;
     this.connect();
   }
 
   async connect() {
-    await this.client.connect();
-    console.log('Redis connected');
+    if (this.connected) return;
+    try {
+      await this.client.connect();
+      this.connected = true;
+      console.log('Redis connected');
+    } catch (error) {
+      console.error('Redis connection failed:', error);
+      setTimeout(() => this.connect(), 5000); // Reconnect
+    }
   }
 
   async get(key) {
-    const start = Date.now();
-    const value = await this.client.get(key);
-    console.log(`[CACHE] GET ${key} - ${Date.now() - start}ms`);
-    return value ? JSON.parse(value) : null;
-  }
-
-  async set(key, value, ttl) {
-    const start = Date.now();
-    await this.client.setEx(key, ttl, JSON.stringify(value));
-    console.log(`[CACHE] SET ${key} - ${Date.now() - start}ms`);
-  }
-
-  async del(patterns) {
     try {
-      const patternsArray = Array.isArray(patterns) ? patterns : [patterns];
-      let allKeys = [];
+      const value = await this.client.get(key);
+      return value ? JSON.parse(value) : null;
+    } catch (error) {
+      console.error('Cache read error:', error);
+      return null;
+    }
+  }
 
-      // Get keys for all patterns
-      for (const pattern of patternsArray) {
-        const keys = await this.client.keys(pattern);
-        allKeys = [...allKeys, ...keys];
-      }
+  async set(key, value, ttl = 300) {
+    try {
+      await this.client.setEx(key, ttl, JSON.stringify(value));
+    } catch (error) {
+      console.error('Cache write error:', error);
+    }
+  }
 
-      // Remove duplicate keys
-      const uniqueKeys = [...new Set(allKeys)];
+  async delPattern(pattern) {
+    try {
+      let cursor = '0';
+      const keys = [];
+      do {
+        const reply = await this.client.scan(cursor, {
+          MATCH: pattern,
+          COUNT: 1000,
+        });
+        cursor = reply.cursor;
+        keys.push(...reply.keys);
+      } while (cursor !== '0');
 
-      if (uniqueKeys.length > 0) {
-        await this.client.del(uniqueKeys);
-        console.log(`Deleted ${uniqueKeys.length} keys:`, uniqueKeys);
+      if (keys.length) {
+        const pipeline = this.client.pipeline();
+        keys.forEach((key) => pipeline.del(key));
+        await pipeline.exec();
       }
     } catch (error) {
-      console.error('Cache deletion error:', error);
+      console.error('Cache pattern deletion error:', error);
+    }
+  }
+
+  async healthCheck() {
+    try {
+      await this.client.ping();
+      return true;
+    } catch {
+      return false;
     }
   }
 }
