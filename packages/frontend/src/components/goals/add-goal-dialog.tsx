@@ -17,6 +17,7 @@ import { cn, validateDueDate } from "@/lib/utils";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
+import { useRouter } from "next/navigation";
 
 interface AddGoalDialogProps {
   open: boolean;
@@ -81,7 +82,7 @@ interface AddGoalDialogProps {
  */
 export function AddGoalDialog({ open, onOpenChange }: AddGoalDialogProps) {
   const queryClient = useQueryClient();
-
+  const router = useRouter();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -94,9 +95,11 @@ export function AddGoalDialog({ open, onOpenChange }: AddGoalDialogProps) {
       description: string;
       dueDate: string;
     }) => {
-      return await api.post("/goals", formData);
+      const response = (await api.post<Goal>("/goals", formData)).data;
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      router.push(`dashboard/goal/${response?.id}`);
       queryClient.invalidateQueries({ queryKey: ["Goals"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
     },
