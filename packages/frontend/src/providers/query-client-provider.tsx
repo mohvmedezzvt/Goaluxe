@@ -14,7 +14,8 @@ export function QueryClientProvider({
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 1000 * 60 * 5,
+        staleTime: 1000 * 60, // Reduce to 1 minute
+        retry: 2, // Add retry limit
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       },
     },
