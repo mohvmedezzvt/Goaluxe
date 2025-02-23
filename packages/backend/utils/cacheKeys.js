@@ -1,32 +1,34 @@
+const CACHE_VERSION = 'v1';
+
 export const CacheKeys = {
-  GOAL: (goalId) => `goal:${goalId}`,
+  GOAL: (goalId) => `${CACHE_VERSION}:goal:${goalId}`,
   GOALS: (userId, params = {}) => {
-    const validatedParams = {
-      page: params.page || 1,
-      limit: params.limit || 10,
-      status: params.status || '',
-      title: params.title || '',
-      fromDueDate: params.fromDueDate || '',
-      toDueDate: params.toDueDate || '',
-      sortBy: params.sortBy || '',
-      order: params.order || '',
+    const safeParams = {
+      page: params.page?.toString() || '1',
+      limit: params.limit?.toString() || '10',
+      status: params.status || 'all',
+      title: params.title?.slice(0, 50) || '', // Prevent long keys
+      from: params.fromDueDate || '',
+      to: params.toDueDate || '',
+      sort: params.sortBy || 'createdAt',
+      order: params.order || 'desc',
     };
 
-    return `goals:user:${userId}:${Object.entries(validatedParams)
-      .map(([key, value]) => `${key}=${value}`)
-      .join('&')}`;
+    return (
+      `${CACHE_VERSION}:goals:user:${userId}:` +
+      Object.entries(safeParams)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => `${k}=${v}`)
+        .join('&')
+    );
   },
 
   ANALYTICS: (userId, type, params) =>
-    `analytics:user:${userId}:${type}:${stringifyParams(params)}`,
-  SUBTASKS: (goalId, params) =>
-    `subtasks:goal:${goalId}:${stringifyParams(params)}`,
-  USER_PROFILE: (userId) => `user:${userId}:profile`,
-};
+    `${CACHE_VERSION}:analytics:${type}:user:${userId}:` +
+    Object.entries(params || {})
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
+      .join('&'),
 
-const stringifyParams = (params = {}) => {
-  return Object.entries(params)
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([k, v]) => `${k}=${v}`)
-    .join('&');
+  USER_PROFILE: (userId) => `${CACHE_VERSION}:user:${userId}:profile`,
 };
