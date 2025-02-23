@@ -229,7 +229,6 @@ export const auth = {
     } catch (error) {
       sessionStorage.clear();
       localStorage.clear();
-      window.location.href = "/login"; // Redirect to login on refresh failure
       throw error;
     }
   },
