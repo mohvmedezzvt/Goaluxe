@@ -89,7 +89,7 @@ export function useAuth(): AuthState {
         description: "You have been logged out successfully.",
         timeout: 2500,
       });
-      router.push("/login"); // Redirect user to login page
+      router.push("/"); // Redirect user to login page
     } catch (error) {
       console.error("Logout error:", error);
       addToast({
