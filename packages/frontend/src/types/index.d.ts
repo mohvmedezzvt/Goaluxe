@@ -9,17 +9,23 @@ interface Goal {
   id: string;
   title: string;
   description: string;
+  reward: string | null;
   dueDate: Date | string;
   progress: number;
   status: "active" | "completed" | "cancelled";
   createdAt: Date | string;
+}
+interface subtask {
+  id: string;
+  title: string;
+  completed: boolean;
 }
 interface Analytics {
   activeCount: number;
   completedCount: number;
   overallProgress: number;
   dueSoonCount: number;
-  dueSoonGoals: Goal[];
+  dueSoonTasks: Goal[];
 }
 interface URLParams {
   title: string | null;
