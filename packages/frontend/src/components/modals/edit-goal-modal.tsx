@@ -18,100 +18,63 @@ import {
 } from "@heroui/react";
 
 /**
- * EditGoalDialog component allows users to edit the details of a specific goal.
+ * EditGoalModal Component
  *
- * @param {Object} props - The properties object.
- * @param {string} props.goalId - The ID of the goal to be edited.
- * @param {boolean} props.open - A boolean indicating whether the dialog is open.
- * @param {function} props.onOpenChange - A callback function to handle the change in dialog open state.
+ * A modal component that allows users to edit the details of a specific goal.
+ * It fetches the goal data based on the `isEditing` state, validates the due date,
+ * and provides a form to update the goal's title, description, due date, and status.
  *
- * @returns {JSX.Element} The rendered EditGoalDialog component.
- *
- * @component
- * @example
- * const goalId = "123";
- * const [open, setOpen] = useState(false);
- *
- * <EditGoalDialog
- *   goalId={goalId}
- *   open={open}
- *   onOpenChange={setOpen}
- * />
- */
-/**
- * Component for editing a goal in a dialog.
- *
- * @component
- * @param {Object} props - The component props.
- * @param {string} props.goalId - The ID of the goal to be edited.
- * @param {boolean} props.open - Boolean indicating whether the dialog is open.
- * @param {function} props.onOpenChange - Callback function to handle the dialog open state change.
- *
- * @typedef {Object} EditGoalDialogProps
- * @property {string} goalId - The ID of the goal to be edited.
- * @property {boolean} open - Boolean indicating whether the dialog is open.
- * @property {function} onOpenChange - Callback function to handle the dialog open state change.
- *
- * @returns {JSX.Element} The rendered EditGoalDialog component.
+ * @returns {JSX.Element} The rendered EditGoalModal component.
  *
  * @example
- * <EditGoalDialog
- *   goalId="123"
- *   open={isOpen}
- *   onOpenChange={setIsOpen}
- * />
+ * // Usage in a parent component
+ * const [isEditing, setEdit] = useState<string | null>(null);
+ *
+ * <EditGoalModal />
+ *
+ * // When you want to edit a goal, set the `isEditing` state to the goal's ID:
+ * setEdit("goal-id-123");
  */
 export function EditGoalModal() {
   const queryClient = useQueryClient();
   const { isEditing, setEdit } = useEdit();
 
+  // State for form data and validation errors
+  const [formData, setFormData] = useState<Partial<Goal>>({
+    title: "",
+    description: "",
+    dueDate: "",
+    status: "active",
+  });
+
+  const [isDateError, setIsDateError] = useState(false);
+
+  // Mutation to update the goal
   const { mutate, isPending } = useMutation({
-    mutationKey: ["Goal", isEditing],
+    mutationKey: ["goal", isEditing],
     mutationFn: async () => {
       return await api.put(`goals/${isEditing}`, formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["goal", isEditing] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      setEdit(null); // Close modal after successful update
     },
   });
 
+  // Query to fetch the goal data
   const { data: goal } = useQuery({
     queryKey: ["goal", isEditing],
     queryFn: async () => {
       const response = (await api.get<Goal>(`goals/${isEditing}`)).data;
-      if (response?.id === undefined) {
-        return formData;
-      } else {
-        return response;
-      }
+      return response;
     },
-  });
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    dueDate: "",
-    status: "active" as Goal["status"],
+    enabled: !!isEditing, // Only fetch if `isEditing` is truthy
   });
 
-  const [isDateError, setIsDateError] = useState(false);
-
-  const handleSetDueDate = (dueDate: string) => {
-    const dateValidation = validateDueDate(dueDate);
-    if (dateValidation) {
-      setFormData((prev) => ({
-        ...prev,
-        dueDate: dueDate, // Ensure `dueDate` remains a string
-      }));
-      setIsDateError(false);
-    } else {
-      setIsDateError(true);
-    }
-  };
-
+  // Effect to populate form data when the goal is fetched
   useEffect(() => {
     if (goal) {
-      // Safely handle the case where `goal.dueDate` is undefined
       const dueDate = goal.dueDate
         ? new Date(goal.dueDate).toISOString().split("T")[0]
         : "";
@@ -119,38 +82,49 @@ export function EditGoalModal() {
       setFormData({
         title: goal.title || "",
         description: goal.description || "",
-        dueDate: dueDate, // Use the safely parsed date
+        dueDate,
         status: goal.status || "active",
       });
-    } else {
-      // If `goal` is undefined, reset the form data to default values
-      setFormData({
-        title: "",
-        description: "",
-        dueDate: "",
-        status: "active",
-      });
     }
-  }, [isEditing, goal]);
+  }, [goal]);
+
+  /**
+   * Handles setting the due date and validates it.
+   *
+   * @param {string} dueDate - The due date string in YYYY-MM-DD format.
+   */
+  const handleSetDueDate = (dueDate: string) => {
+    const isValidDate = validateDueDate(dueDate);
+    setIsDateError(!isValidDate);
+
+    if (isValidDate) {
+      setFormData((prev) => ({
+        ...prev,
+        dueDate,
+      }));
+    }
+  };
+
+  /**
+   * Handles form submission.
+   *
+   * @param {React.FormEvent} e - The form submission event.
+   */
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isDateError) {
+      mutate();
+    }
+  };
 
   return (
     <Modal backdrop="blur" isOpen={!!isEditing} onClose={() => setEdit(null)}>
       <ModalContent>
-        <form
-          onSubmit={(e) => {
-            try {
-              e.preventDefault();
-              mutate();
-            } finally {
-              setFormData;
-            }
-          }}
-        >
-          <ModalHeader>
-            Edit Goal Update your goal details and progress.
-          </ModalHeader>
+        <form onSubmit={handleSubmit}>
+          <ModalHeader>Edit Goal</ModalHeader>
           <ModalBody>
             <div className="space-y-4 py-4">
+              {/* Title Input */}
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
                 <Input
@@ -163,6 +137,8 @@ export function EditGoalModal() {
                   required
                 />
               </div>
+
+              {/* Description Input */}
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
@@ -178,15 +154,15 @@ export function EditGoalModal() {
                   required
                 />
               </div>
+
+              {/* Due Date Input */}
               <div className="space-y-2">
                 <Label htmlFor="dueDate">Target Date</Label>
                 <Input
                   id="dueDate"
                   type="date"
-                  className={cn(
-                    isDateError ? "border-red-500 text-red-500" : ""
-                  )}
-                  value={formData.dueDate}
+                  className={cn(isDateError && "border-red-500 text-red-500")}
+                  value={formData.dueDate as string}
                   onChange={(e) => handleSetDueDate(e.target.value)}
                   required
                 />
@@ -196,6 +172,8 @@ export function EditGoalModal() {
                   </p>
                 )}
               </div>
+
+              {/* Status Select */}
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
                 <select
@@ -212,12 +190,13 @@ export function EditGoalModal() {
                 >
                   <option value="active">Active</option>
                   <option value="completed">Completed</option>
-                  <option value="cancelled">cancelled</option>
+                  <option value="cancelled">Cancelled</option>
                 </select>
               </div>
             </div>
           </ModalBody>
           <ModalFooter>
+            {/* Close Button */}
             <Button
               type="button"
               variant="outline"
@@ -226,7 +205,9 @@ export function EditGoalModal() {
             >
               Close
             </Button>
-            <Button type="submit" disabled={isPending}>
+
+            {/* Save Changes Button */}
+            <Button type="submit" disabled={isPending || isDateError}>
               {isPending ? "Saving..." : "Save Changes"}
             </Button>
           </ModalFooter>
