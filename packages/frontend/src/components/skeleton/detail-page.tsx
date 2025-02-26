@@ -133,3 +133,38 @@ export const GoalDetailsSkeleton = () => {
     </div>
   );
 };
+
+export const SubtaskOverviewCardSkeleton = () => {
+  return (
+    <Card
+      className="col-span-full lg:col-span-4 row-span-2 border rounded-2xl p-6 space-y-4"
+      shadow="none"
+    >
+      <CardHeader>
+        <div className="flex w-full justify-between items-center">
+          <Skeleton className="h-5 w-[100px]" />
+          <Skeleton className="h-9 w-[140px] rounded-md" />
+        </div>
+      </CardHeader>
+      <CardBody>
+        <div className="space-y-4">
+          {[1, 2, 3].map((_, i) => (
+            <div key={i} className="p-4 space-y-4">
+              <div className="flex justify-between">
+                <div className="flex items-start gap-3 w-[60%]">
+                  <Skeleton className="w-5 h-5 rounded" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+                <Skeleton className="h-6 w-[80px] rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardBody>
+    </Card>
+  );
+};
