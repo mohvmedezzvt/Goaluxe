@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "../ui/card";
-import StatusTag from "./goal-status-tag";
+import StatusTag from "./status-tag";
 import Link from "next/link";
 import limitCharacters from "@/lib/utils";
 
@@ -30,7 +30,7 @@ import limitCharacters from "@/lib/utils";
  * />
  */
 const GoalOverviewCard = React.memo(
-  async ({ title, id, description, progress, status, dueDate }: Goal) => {
+  ({ title, id, description, progress, status, dueDate }: Goal) => {
     return (
       <Link href={`/dashboard/goal/${id}`} className="block">
         <motion.div
