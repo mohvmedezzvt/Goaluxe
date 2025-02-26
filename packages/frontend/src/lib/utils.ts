@@ -23,7 +23,7 @@ function limitCharacters({
   str,
   maxLength,
 }: {
-  str: string;
+  str: string | undefined;
   maxLength: number;
 }): string {
   if (typeof str !== "string") {
