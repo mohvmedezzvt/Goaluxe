@@ -2,7 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardBody, CardHeader, Button } from "@heroui/react";
+import { useSearchParamsHook } from "@/hooks/use-search-params";
+import { useGoalsQuery } from "@/hooks/use-goals-query";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardBody, CardHeader, Button, Pagination } from "@heroui/react";
 import {
   Plus,
   Target,
@@ -18,26 +24,20 @@ import {
   GoalsFilters,
   NoSearchResults,
 } from "@/components/goals/goals-filters";
-import { motion, AnimatePresence } from "framer-motion";
-import { Pagination } from "@heroui/pagination";
-
-import { cn } from "@/lib/utils";
 import GoalOverviewCard from "@/components/goals/goal-overview-card";
-import { useSearchParamsHook } from "@/hooks/use-search-params";
-import { useGoalsQuery } from "@/hooks/use-goals-query";
-import { OverviewGoalCardSkeleton } from "@/components/skeleton/overview-goal-card";
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
 import {
   QuickStatusCardSkeleton,
   ProgressOverviewSkeleton,
   UpcomingDeadline,
 } from "@/components/skeleton/quick-status";
+import { OverviewGoalCardSkeleton } from "@/components/skeleton/overview-goal-card";
 
 /**
- * DashboardPage component is the main dashboard view for the application.
- * It displays an overview of the user's goals, including active, completed, and upcoming goals.
- * It also provides functionalities to add, edit, and delete goals.
+ * DashboardPage Component
+ *
+ * The main dashboard view for the application. It displays an overview of the user's goals,
+ * including active, completed, and upcoming goals. It also provides functionalities to add,
+ * edit, and delete goals.
  *
  * @component
  * @returns {JSX.Element} The rendered DashboardPage component.
@@ -56,15 +56,14 @@ import {
  * - `useAuth` to get the current user.
  * - `useSearchParams` to get query parameters from the URL.
  * - `useGoalsQuery` to fetch goals data from the API.
- * - `useDeleteGoal` to handle goal deletion.
- * - `useEdit` to manage goal editing state.
+ * - `useQuery` to fetch analytics data.
  * - `useState` to manage local state for dialogs.
  *
  * The component is divided into several sections:
  * - Header Section: Displays a welcome message and a button to add a new goal.
  * - Quick Stats: Shows quick statistics about active goals, completed goals, overall progress, and upcoming deadlines.
  * - Main Content Grid: Contains the goals list and a sidebar with progress overview and upcoming deadlines.
- * - Dialogs: Includes dialogs for adding, editing, and deleting goals.
+ * - Dialogs: Includes dialogs for adding goals.
  */
 export default function DashboardPage() {
   const { user } = useAuth(); // Get the authenticated user
@@ -75,8 +74,7 @@ export default function DashboardPage() {
     useSearchParamsHook();
 
   // Fetch goals analytics using `react-query`
-
-  const { data: analytics, isPending: loading } = useQuery({
+  const { data: analytics, isPending: loadingAnalytics } = useQuery({
     queryKey: ["analytics"],
     queryFn: async () => {
       return (await api.get<Analytics>("/analytics/dashboard")).data;
@@ -84,7 +82,7 @@ export default function DashboardPage() {
   });
 
   // Fetch goals using `react-query`
-  const { data: Goals, isPending } = useGoalsQuery({
+  const { data: Goals, isPending: loadingGoals } = useGoalsQuery({
     title,
     page,
     status,
@@ -97,7 +95,7 @@ export default function DashboardPage() {
   const totalPages = Goals?.data?.totalPages || 0;
 
   // Categorize goals into active and completed
-  const activeGoals = analytics?.activeCount;
+  const activeGoals = analytics?.activeCount || 0;
   const dueSoonGoals = analytics?.dueSoonTasks || [];
   const completedGoals = analytics?.completedCount || 0;
   const dueSoonCount = analytics?.dueSoonCount || 0;
@@ -105,12 +103,11 @@ export default function DashboardPage() {
   // Calculate the average progress of all goals
   const averageProgress = analytics?.overallProgress || 0;
 
-  const isLoading = loading || isPending;
-
+  const isLoading = loadingAnalytics || loadingGoals;
   const isDataEmpty = !isLoading && !title && !status && goals.length === 0;
-
   const isSearchResultEmpty = (title || status) && goals.length === 0;
 
+  // Memoized analytics data for quick stats
   const memoizedAnalytics = useMemo(
     () => [
       {
@@ -133,12 +130,12 @@ export default function DashboardPage() {
       },
       {
         icon: <Clock className="h-5 w-5 text-orange-600" />,
-        label: "Due Soon",
+        label: "Due Soon Goals",
         value: dueSoonCount,
         bgColor: "bg-orange-100 dark:bg-orange-900/20",
       },
     ],
-    [activeGoals, dueSoonGoals, completedGoals, averageProgress]
+    [activeGoals, completedGoals, averageProgress, dueSoonCount]
   );
 
   return (
@@ -165,7 +162,7 @@ export default function DashboardPage() {
 
       {/* Quick Stats Section */}
       <div className="col-span-full flex flex-col lg:flex-row items-center justify-between gap-6">
-        {loading
+        {loadingAnalytics
           ? Array.from({ length: 4 }, (_, index) => (
               <QuickStatusCardSkeleton key={`analytic-skeleton-${index}`} />
             ))
@@ -206,7 +203,7 @@ export default function DashboardPage() {
           <CardBody>
             <AnimatePresence mode="popLayout">
               <div className="space-y-4 h-[34rem] overflow-y-auto">
-                {!isPending ? (
+                {!loadingGoals ? (
                   goals.map((goal) => (
                     <GoalOverviewCard key={goal.id} {...goal} />
                   ))
@@ -260,7 +257,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Progress Overview */}
-      {loading ? (
+      {loadingAnalytics ? (
         <ProgressOverviewSkeleton />
       ) : (
         <Card className="col-span-2 border p-4" shadow="none">
@@ -295,8 +292,9 @@ export default function DashboardPage() {
           </CardBody>
         </Card>
       )}
+
       {/* Upcoming Deadlines */}
-      {loading ? (
+      {loadingAnalytics ? (
         <UpcomingDeadline />
       ) : (
         <Card className="col-span-2 row-span-2 border p-4" shadow="none">
