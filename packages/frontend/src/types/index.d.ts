@@ -15,10 +15,13 @@ interface Goal {
   status: "active" | "completed" | "cancelled";
   createdAt: Date | string;
 }
-interface subtask {
+interface Subtask {
   id: string;
   title: string;
-  completed: boolean;
+  status: "active" | "completed" | "cancelled";
+  createdAt: Date | string;
+  dueDate: Date | string;
+  description: string;
 }
 interface Analytics {
   activeCount: number;
@@ -41,12 +44,6 @@ interface Reward {
   description: string;
   isPublic: boolean;
   createdBy?: string;
-}
-
-interface Subtask {
-  id: string;
-  title: string;
-  completed: boolean;
 }
 
 interface AuthFormProps {
