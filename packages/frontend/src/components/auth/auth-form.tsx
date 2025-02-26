@@ -66,17 +66,17 @@ export function AuthForm({ mode }: AuthFormProps) {
       newErrors.password =
         "Password must be at least 8 characters long, include letters, numbers, and a special character";
     } else if (!validatePassword(formData.password)) {
-      newErrors.password = "Password must be at least 6 characters";
+      newErrors.password = "Password must be at least 8 characters";
     }
 
     if (mode === "register") {
       if (!formData.firstName || !validateUsername(formData.firstName)) {
         newErrors.firstName =
-          "First name must be 3-20 characters and can contain letters, numbers, underscores, and hyphens";
+          "First name must be 3-30 characters and can contain letters, numbers, underscores, and hyphens";
       }
       if (!formData.secondName || !validateUsername(formData.secondName)) {
         newErrors.secondName =
-          "Second name must be 3-20 characters and can contain letters, numbers, underscores, and hyphens";
+          "Second name must be 3-30 characters and can contain letters, numbers, underscores, and hyphens";
       }
       if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = "Passwords do not match";
@@ -142,7 +142,6 @@ export function AuthForm({ mode }: AuthFormProps) {
         error instanceof Error
           ? error.message
           : "An unexpected error occurred. Please try again later.";
-
       setErrors({
         general:
           mode === "login"
@@ -242,6 +241,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               id="password"
               name="password"
               label="Password"
+              placeholder="Enter Password"
               labelPlacement="outside"
               type="password"
               variant="bordered"
@@ -261,6 +261,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 name="confirmPassword"
                 labelPlacement="outside"
                 label="Confirm Password"
+                placeholder="Confirm Password"
                 variant="bordered"
                 type="password"
                 value={formData.confirmPassword}
