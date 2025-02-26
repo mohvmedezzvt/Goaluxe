@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { QueryClientProvider } from "@/components/providers/query-client-provider";
+import { QueryClientProvider } from "@/providers/query-client-provider";
 import { cn } from "@/lib/utils";
 import { HeroUIProvider, ToastProvider } from "@heroui/react";
+import ErrorBoundary from "@/components/error/error-boundary";
+import Error from "@/components/error/error";
+import Header from "@/components/header";
+import Footer from "@/components/footer";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -19,14 +23,18 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn(inter.className)} suppressHydrationWarning>
-        <QueryClientProvider>
-          <HeroUIProvider>
-            <div id="app" suppressHydrationWarning>
-              <ToastProvider placement="top-right" />
-              <main className="min-h-screen bg-background ">{children}</main>
-            </div>
-          </HeroUIProvider>
-        </QueryClientProvider>
+        <ErrorBoundary FallbackComponent={Error}>
+          <QueryClientProvider>
+            <HeroUIProvider>
+              <div id="app" suppressHydrationWarning>
+                <ToastProvider placement="top-right" />
+                <Header />
+                {children}
+                <Footer />
+              </div>
+            </HeroUIProvider>
+          </QueryClientProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
