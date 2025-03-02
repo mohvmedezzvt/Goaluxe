@@ -1,3 +1,5 @@
+import redis from '../config/redis.js';
+import { CacheKeys } from '../utils/cacheKeys.js';
 import {
   getUserProfile,
   updateUserProfile,
@@ -14,20 +16,18 @@ import {
  */
 export const getProfile = async (req, res, next) => {
   try {
-    // Extract the authenticated user's ID from req.user
-    const userId = req.user.id;
+    const cacheKey = CacheKeys.USER_PROFILE(req.user.id);
+    const cached = await redis.get(cacheKey);
+    res.locals.cacheHit = !!cached;
+    if (cached) return res.status(200).json(cached);
 
-    // Fetch the user profile from the service layer (password is excluded)
-    const profile = await getUserProfile(userId);
-
-    // Return the profile with a 200 OK status
-    res.status(200).json(profile);
+    const profile = await getUserProfile(req.user.id);
+    await redis.set(cacheKey, profile, 1800); // 30-minute TTL
+    return res.status(200).json(profile);
   } catch (error) {
-    // If the error indicates that the user was not found, return a 404 response
     if (error.message === 'User not found') {
       return res.status(404).json({ message: error.message });
     }
-    // Otherwise, pass the error to the centralized error handler
     next(error);
   }
 };
@@ -46,34 +46,24 @@ export const updateProfile = async (req, res, next) => {
     const userId = req.user.id;
     const updateData = { ...req.body };
 
-    // Remove the role field to prevent users from changing their role
-    if ('role' in updateData) {
-      delete updateData.role;
-    }
+    // Prevent updating protected fields
+    delete updateData.role;
+    delete updateData.password;
 
-    // Remove the password field to prevent users from changing their password
-    if ('password' in updateData) {
-      delete updateData.password;
-    }
-
-    // Optionally, validate that updateData contains keys
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ message: 'Update data is required' });
     }
 
     const updatedProfile = await updateUserProfile(userId, updateData);
-
-    // Return the updated profile with a 200 OK status
-    res.status(200).json(updatedProfile);
+    await redis.del(CacheKeys.USER_PROFILE(userId));
+    return res.status(200).json(updatedProfile);
   } catch (error) {
     if (error.message === 'User not found') {
       return res.status(404).json({ message: error.message });
     }
-    // For invalid update data errors, return a 400 response
     if (error.message === 'Update data is required') {
       return res.status(400).json({ message: error.message });
     }
-    // Otherwise, pass the error to the centralized error handler
     next(error);
   }
 };
@@ -84,8 +74,8 @@ export const updateProfile = async (req, res, next) => {
  */
 export const updatePassword = async (req, res, next) => {
   try {
-    const userId = req.user.id;
     const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
 
     if (!currentPassword || !newPassword) {
       return res
@@ -98,7 +88,8 @@ export const updatePassword = async (req, res, next) => {
       currentPassword,
       newPassword
     );
-    res.status(200).json({
+    await redis.del(CacheKeys.USER_PROFILE(userId));
+    return res.status(200).json({
       message: 'Password updated successfully',
       user: updatedUser,
     });
