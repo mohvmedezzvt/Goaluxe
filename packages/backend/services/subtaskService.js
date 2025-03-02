@@ -2,7 +2,6 @@ import Subtask from '../models/subtaskModel.js';
 import Goal from '../models/goalModel.js';
 import { updateGoalProgress } from '../services/goalService.js';
 
-// a maximum allowed limit for subtasks per page.
 const MAX_SUBTASK_LIMIT = 50;
 
 /**
@@ -14,11 +13,9 @@ const MAX_SUBTASK_LIMIT = 50;
  * @throws {Error} - If the parent goal does not exist.
  */
 export const createSubtask = async (goalId, subtaskData) => {
-  // Ensure the parent goal exists.
   const goal = await Goal.findById(goalId);
   if (!goal) throw new Error('Parent goal not found');
 
-  // Create the subtask with a reference to the parent goal.
   const subtask = await Subtask.create({ ...subtaskData, goal: goalId });
   await updateGoalProgress(goalId);
   return subtask;
@@ -34,11 +31,9 @@ export const createSubtask = async (goalId, subtaskData) => {
  * @throws {Error} - If the parent goal does not exist.
  */
 export const getSubtasks = async (goalId, page = 1, limit = 10) => {
-  // Ensure the parent goal exists.
   const goal = await Goal.findById(goalId);
   if (!goal) throw new Error('Parent goal not found');
 
-  // Retrieve paginated subtasks for the goal.
   limit = Math.min(limit, MAX_SUBTASK_LIMIT);
   page = Math.max(Number(page) || 1, 1);
   const skip = (page - 1) * limit;
@@ -67,11 +62,9 @@ export const getSubtasks = async (goalId, page = 1, limit = 10) => {
  * @throws {Error} - If the subtask is not found.
  */
 export const getSubtaskById = async (goalId, subtaskId) => {
-  // Ensure the parent goal exists.
   const goal = await Goal.findById(goalId);
   if (!goal) throw new Error('Parent goal not found');
 
-  // Retrieve the subtask by its ID and ensure it belongs to the specified goal.
   const subtask = await Subtask.findOne({ _id: subtaskId, goal: goalId });
   if (!subtask) throw new Error('Subtask not found');
 
@@ -93,9 +86,7 @@ export const updateSubtask = async (goalId, subtaskId, updateData) => {
     updateData,
     { new: true, runValidators: true }
   );
-  if (!subtask) {
-    throw new Error('Subtask not found or update failed');
-  }
+  if (!subtask) throw new Error('Subtask not found or update failed');
 
   await updateGoalProgress(goalId);
   return subtask;
@@ -114,6 +105,5 @@ export const deleteSubtask = async (goalId, subtaskId) => {
   if (result.deletedCount === 0) {
     throw new Error('Subtask not found or already deleted');
   }
-
   await updateGoalProgress(goalId);
 };
