@@ -6,13 +6,11 @@ import mongoSanitize from 'express-mongo-sanitize';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
+import redis from './config/redis.js';
+import { cacheHeaderMiddleware } from './middleware/cacheHeaders.js';
 
 import connectDB from './config/database.js';
-import authRoutes from './routes/authRoutes.js';
-import userRoutes from './routes/userRoutes.js';
-import goalRoutes from './routes/goalRoutes.js';
-import analyticsRoutes from './routes/analyticsRoutes.js';
-import rewardRoutes from './routes/rewardRoutes.js';
+import routes from './routes/index.js';
 import errorHandler from './middleware/errorHandler.js';
 
 const app = express();
@@ -20,9 +18,15 @@ const port = process.env.PORT || 3001;
 
 connectDB();
 
+try {
+  await redis.client.ping();
+  console.log('Redis connection successful');
+} catch (error) {
+  console.error('Redis connection check failed:', error);
+}
+
 app.use(helmet());
 
-// Rate Limiting: Limit repeated requests to public endpoints.
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -36,29 +40,30 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: 'http://localhost:3000', // Use environment variable or allow all origins
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
-    allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true, // Allow credentials (cookies, authorization headers)
-    optionsSuccessStatus: 204, // Set status code for successful OPTIONS requests
+    optionsSuccessStatus: 204,
   })
 );
 
 app.use(express.json());
 app.use(morgan('dev'));
 app.use(mongoSanitize());
+app.use(cacheHeaderMiddleware);
 
-// Additional Header to Control Referrer Policy
+// Additional Header for Referrer Policy
 app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/goals', goalRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/rewards', rewardRoutes);
+app.use('/api/auth', routes.authRoutes);
+app.use('/api/users', routes.userRoutes);
+app.use('/api/goals', routes.goalRoutes);
+app.use('/api/analytics', routes.analyticsRoutes);
+app.use('/api/rewards', routes.rewardRoutes);
 
 app.use(errorHandler);
 
