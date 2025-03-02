@@ -1,6 +1,8 @@
 import Goal from '../models/goalModel.js';
 import Subtask from '../models/subtaskModel.js';
 import mongoose from 'mongoose';
+import redis from '../config/redis.js';
+import { CacheKeys } from '../utils/cacheKeys.js';
 
 // Maximum number of "Due Soon" goals allowed per page.
 const MAX_DUE_SOON_LIMIT = 50;
@@ -22,22 +24,18 @@ const getCommonAnalytics = async (
   const sevenDaysFromNow = new Date(now);
   sevenDaysFromNow.setDate(now.getDate() + 7);
 
-  // Active Goals Count
+  // Basic goal counts
   const activeCount = await Goal.countDocuments({
     user: new mongoose.Types.ObjectId(userId),
     status: 'active',
   });
-
-  // Completed Goals Count
   const completedCount = await Goal.countDocuments({
     user: new mongoose.Types.ObjectId(userId),
     status: 'completed',
   });
-
-  // Total Goals Count
   const totalCount = await Goal.countDocuments({ user: userId });
 
-  // Overall Progress (average progress across all goals)
+  // Calculate overall progress across all goals
   const overallProgressAgg = await Goal.aggregate([
     { $match: { user: new mongoose.Types.ObjectId(userId) } },
     { $group: { _id: null, avgProgress: { $avg: '$progress' } } },
@@ -46,22 +44,24 @@ const getCommonAnalytics = async (
     ? Number(overallProgressAgg[0].avgProgress.toFixed(2))
     : 0;
 
+  // Limit and pagination for due-soon subtasks
   dueSoonLimit = Math.min(dueSoonLimit, MAX_DUE_SOON_LIMIT);
   dueSoonPage = Math.max(Number(dueSoonPage) || 1, 1);
   const skip = (dueSoonPage - 1) * dueSoonLimit;
 
-  // Find all goals that belong to the user
+  // Get all goal IDs for the user
   const userGoals = await Goal.find({ user: userId }).select('_id');
   const goalIds = userGoals.map((goal) => goal._id);
 
+  // Identify goals with subtasks due soon
   const dueSoonGoalIds = await Subtask.distinct('goal', {
     goal: { $in: goalIds },
     dueDate: { $gte: now, $lte: sevenDaysFromNow },
     status: { $ne: 'completed' },
   });
-
   const dueSoonCount = dueSoonGoalIds.length;
 
+  // Get the due soon subtasks with pagination
   const dueSoonSubtasks = await Subtask.find({
     goal: { $in: dueSoonGoalIds },
     dueDate: { $gte: now, $lte: sevenDaysFromNow },
@@ -91,14 +91,12 @@ const getCommonAnalytics = async (
 const getAdditionalAnalytics = async (baseFilter, totalCount) => {
   const now = new Date();
 
-  // Overdue Goals: Count of goals past due and not completed.
   const overdueCount = await Goal.countDocuments({
     ...baseFilter,
     status: { $ne: 'completed' },
     dueDate: { $lt: now },
   });
 
-  // Goals by Status Breakdown
   const statusBreakdownAgg = await Goal.aggregate([
     { $match: baseFilter },
     { $group: { _id: '$status', count: { $sum: 1 } } },
@@ -108,24 +106,15 @@ const getAdditionalAnalytics = async (baseFilter, totalCount) => {
     statusBreakdown[item._id] = item.count;
   });
 
-  // Completion Rate: Percentage of goals completed out of total.
+  const completedGoals = await Goal.countDocuments({
+    ...baseFilter,
+    status: 'completed',
+  });
   const rawCompletionRate =
-    totalCount > 0
-      ? ((await Goal.countDocuments({ ...baseFilter, status: 'completed' })) /
-          totalCount) *
-        100
-      : 0;
-
+    totalCount > 0 ? (completedGoals / totalCount) * 100 : 0;
   const completionRate = Number(rawCompletionRate.toFixed(2));
 
-  // Streaks/Consistency: (Placeholder, as this may require additional data or tracking logic)
-  // soon
-
-  return {
-    overdueCount,
-    statusBreakdown,
-    completionRate,
-  };
+  return { overdueCount, statusBreakdown, completionRate };
 };
 
 /**
@@ -137,12 +126,20 @@ export const getDashboardAnalytics = async (
   dueSoonPage = 1,
   dueSoonLimit = 10
 ) => {
+  const cacheKey = CacheKeys.ANALYTICS_DASHBOARD(userId);
+  const cached = await redis.get(cacheKey);
+  if (cached) return cached;
+
   const common = await getCommonAnalytics(userId, dueSoonPage, dueSoonLimit);
-  // We remove totalCount and baseFilter from the response
-  const {
-    totalCount /* eslint-disable-line no-unused-vars */,
-    ...dashboardAnalytics
-  } = common;
+  // Exclude internal values that are not needed on the dashboard
+  const { totalCount, ...dashboardAnalytics } = common;
+
+  try {
+    await redis.set(cacheKey, dashboardAnalytics, 600);
+    await redis.trackKey(userId, cacheKey);
+  } catch (error) {
+    console.error('Dashboard analytics cache write error:', error);
+  }
   return dashboardAnalytics;
 };
 
