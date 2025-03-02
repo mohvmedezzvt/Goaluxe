@@ -1,5 +1,7 @@
 import User from '../models/userModel.js';
 import bcrypt from 'bcryptjs';
+import redis from '../config/redis.js';
+import { CacheKeys } from '../utils/cacheKeys.js';
 
 const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) || 10;
 
@@ -12,13 +14,19 @@ const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) || 10;
  * @throws {Error} - Throws an error if the user is not found.
  */
 export const getUserProfile = async (userId) => {
-  // Find the user by ID and exclude the password field.
-  const user = await User.findById(userId).select('-password');
-
-  if (!user) {
-    throw new Error('User not found');
+  const cacheKey = CacheKeys.USER_PROFILE(userId);
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached) return cached;
+  } catch (err) {
+    console.error('Cache read failed, falling back to DB', err);
   }
 
+  const user = await User.findById(userId).select('-password').lean();
+  if (!user) throw new Error('User not found');
+
+  await redis.set(cacheKey, user, 1800); // 30-minute TTL
+  await redis.trackKey(userId, cacheKey);
   return user;
 };
 
@@ -32,7 +40,6 @@ export const getUserProfile = async (userId) => {
  * @throws {Error} - Throws an error if updateData is invalid or the user is not found.
  */
 export const updateUserProfile = async (userId, updateData) => {
-  // Validate that updateData is provided and is not empty.
   if (
     !updateData ||
     typeof updateData !== 'object' ||
@@ -41,26 +48,18 @@ export const updateUserProfile = async (userId, updateData) => {
     throw new Error('Update data is required');
   }
 
-  // Remove the role field if present, to prevent users from updating their role.
-  if ('role' in updateData) {
-    delete updateData.role;
-  }
+  // Remove protected fields
+  delete updateData.role;
+  delete updateData.password;
 
-  // Remove the password field if present, to prevent users from updating their password.
-  if ('password' in updateData) {
-    delete updateData.password;
-  }
-
-  // Update the user document; runValidators ensures the update is validated against the schema.
   const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
     new: true,
     runValidators: true,
-  }).select('-password'); // Exclude the password from the returned document.
+  }).select('-password');
 
-  if (!updatedUser) {
-    throw new Error('User not found');
-  }
+  if (!updatedUser) throw new Error('User not found');
 
+  await redis.del(CacheKeys.USER_PROFILE(userId));
   return updatedUser;
 };
 
@@ -80,24 +79,15 @@ export const changeUserPassword = async (
   currentPassword,
   newPassword
 ) => {
-  // Retrieve the user by ID (password field included)
   const user = await User.findById(userId);
-  if (!user) {
-    throw new Error('User not found');
-  }
+  if (!user) throw new Error('User not found');
 
-  // Compare the provided current password with the stored hashed password
   const isMatch = await bcrypt.compare(currentPassword, user.password);
-  if (!isMatch) {
-    throw new Error('Current password is incorrect');
-  }
+  if (!isMatch) throw new Error('Current password is incorrect');
 
-  // Hash the new password
-  const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
-  user.password = hashedPassword;
+  user.password = await bcrypt.hash(newPassword, SALT_ROUNDS);
   await user.save();
 
-  // Remove the password field before returning the user document
-  user.password = undefined;
+  user.password = undefined; // Remove sensitive field before returning
   return user;
 };

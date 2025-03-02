@@ -1,6 +1,8 @@
 import Goal from '../models/goalModel.js';
 import Subtask from '../models/subtaskModel.js';
 import mongoose from 'mongoose';
+import redis from '../config/redis.js';
+import { CacheKeys } from '../utils/cacheKeys.js';
 
 /**
  * Creates a new goal in the database.
@@ -8,9 +10,7 @@ import mongoose from 'mongoose';
  * @return {Promise<Object>} - The newly created goal document.
  */
 export const createGoal = async (data) => {
-  // Business logic or additional validations can be added here.
-  const goal = await Goal.create(data);
-  return goal;
+  return await Goal.create(data);
 };
 
 /**
@@ -35,55 +35,47 @@ export const createGoal = async (data) => {
  *   - totalPages: Total number of pages.
  */
 export const getGoals = async (userId, query = {}) => {
-  // Parse pagination parameters from the query; default to page 1 and limit 10
   const page = parseInt(query.page, 10) || 1;
   const maxLimit = 50;
   const limit = Math.min(parseInt(query.limit, 10) || 10, maxLimit);
   const skip = (page - 1) * limit;
 
-  // Build a filter object that always includes the authenticated user's goals
   const filter = { user: userId };
-
-  // Optional filtering by status
-  if (query.status) {
-    filter.status = query.status;
-  }
-
-  // Optional filtering by title (case-insensitive, partial match)
-  if (query.title) {
-    filter.title = { $regex: query.title, $options: 'i' };
-  }
-
-  // Optional filtering by due date range
-  if (query.fromDueDate) {
-    filter.dueDate = { $gte: new Date(query.fromDueDate) };
-  }
+  if (query.status) filter.status = query.status;
+  if (query.title) filter.title = { $regex: query.title, $options: 'i' };
+  if (query.fromDueDate) filter.dueDate = { $gte: new Date(query.fromDueDate) };
   if (query.toDueDate) {
     filter.dueDate = filter.dueDate || {};
     filter.dueDate.$lte = new Date(query.toDueDate);
   }
 
-  // Count the total number of goals that match the filter
   const total = await Goal.countDocuments(filter);
-
-  // Build the sort object
-  let sort = {};
-  if (query.sortBy && ['dueDate', 'progress', 'title'].includes(query.sortBy)) {
-    const order = query.order && query.order.toLowerCase() === 'desc' ? -1 : 1;
-    sort[query.sortBy] = order;
-  } else {
-    // Default sort by creation time decending (newest first)
-    sort = { createdAt: -1 };
-  }
+  const sort =
+    query.sortBy && ['dueDate', 'progress', 'title'].includes(query.sortBy)
+      ? {
+          [query.sortBy]:
+            query.order && query.order.toLowerCase() === 'desc' ? -1 : 1,
+        }
+      : { createdAt: -1 };
 
   const goals = await Goal.find(filter).sort(sort).skip(skip).limit(limit);
-  return {
+  const result = {
     data: goals,
     total,
     page,
     limit,
     totalPages: Math.ceil(total / limit),
   };
+
+  try {
+    const cacheKey = CacheKeys.GOALS(userId, query);
+    await redis.set(cacheKey, result, 600);
+    await redis.trackKey(userId, cacheKey);
+  } catch (error) {
+    console.error('Cache write error:', error);
+  }
+
+  return result;
 };
 
 /**
@@ -92,8 +84,7 @@ export const getGoals = async (userId, query = {}) => {
  * @returns {Promise<Object|null>} - The goal document if found, or null.
  */
 export const getGoalById = async (id) => {
-  const goal = await Goal.findById(id);
-  return goal;
+  return await Goal.findById(id);
 };
 
 /**
@@ -103,10 +94,17 @@ export const getGoalById = async (id) => {
  * @returns {Promise<Object|null>} - The updated goal document, or null if not found.
  */
 export const updateGoal = async (id, updateData) => {
-  // Option { new: true } returns the updated document.
   const updatedGoal = await Goal.findByIdAndUpdate(id, updateData, {
     new: true,
   });
+  try {
+    await Promise.all([
+      redis.invalidateUser(updatedGoal.user.toString()),
+      redis.del(CacheKeys.GOAL(id)),
+    ]);
+  } catch (error) {
+    console.error('Cache cleanup failed:', error);
+  }
   return updatedGoal;
 };
 
@@ -118,26 +116,26 @@ export const updateGoal = async (id, updateData) => {
  * @returns {Promise<number>} - The new calculated progress value (rounded to two decimals).
  */
 export const updateGoalProgress = async (goalId) => {
-  // First, retrieve the goal to check its status.
   const goal = await Goal.findById(goalId);
   if (!goal) throw new Error('Goal not found');
 
-  // Count the number of subtasks for this goal.
   const subtaskCount = await Subtask.countDocuments({
     goal: new mongoose.Types.ObjectId(goalId),
   });
 
   let newProgress = 0;
-
   if (subtaskCount === 0) {
     newProgress = goal.status === 'completed' ? 100 : 0;
   } else {
-    // If there are subtasks, calculate the average progress.
     const aggregation = await Subtask.aggregate([
       { $match: { goal: new mongoose.Types.ObjectId(goalId) } },
-      { $group: { _id: '$goal', avgProgress: { $avg: '$progress' } } },
+      {
+        $group: {
+          _id: '$goal',
+          avgProgress: { $avg: { $ifNull: ['$progress', 0] } },
+        },
+      },
     ]);
-
     newProgress =
       aggregation.length > 0
         ? Number(aggregation[0].avgProgress.toFixed(2))
@@ -145,6 +143,14 @@ export const updateGoalProgress = async (goalId) => {
   }
 
   await Goal.findByIdAndUpdate(goalId, { progress: newProgress });
+  try {
+    await Promise.all([
+      redis.invalidateUser(goal.user.toString()),
+      redis.del(CacheKeys.GOAL(goalId)),
+    ]);
+  } catch (error) {
+    console.error('Cache cleanup failed:', error);
+  }
   return newProgress;
 };
 
@@ -154,5 +160,16 @@ export const updateGoalProgress = async (goalId) => {
  * @returns {Promise<void>}
  */
 export const deleteGoal = async (id) => {
+  const goal = await Goal.findById(id);
+  if (!goal) throw new Error('Goal not found');
+
   await Goal.findByIdAndDelete(id);
+  try {
+    await Promise.all([
+      redis.invalidateUser(goal.user.toString()),
+      redis.del(CacheKeys.GOAL(id)),
+    ]);
+  } catch (error) {
+    console.error('Cache cleanup failed:', error);
+  }
 };

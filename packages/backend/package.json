@@ -15,6 +15,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@redis/client": "^1.6.0",
     "bcryptjs": "^3.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -26,7 +27,8 @@
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.10.0",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "redis": "^4.7.0"
   },
   "devDependencies": {
     "@babel/core": "^7.26.8",

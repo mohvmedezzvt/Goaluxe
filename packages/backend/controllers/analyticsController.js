@@ -1,4 +1,6 @@
 import * as analyticsService from '../services/analyticsService.js';
+import redis from '../config/redis.js';
+import { CacheKeys } from '../utils/cacheKeys.js';
 
 /**
  * Returns lightweight dashboard analytics.
@@ -7,14 +9,22 @@ import * as analyticsService from '../services/analyticsService.js';
 export const getDashboardAnalytics = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const dueSoonPage = Number(req.query.dueSoonPage) || 1;
-    const dueSoonLimit = Number(req.query.dueSoonLimit) || 10;
+    const cacheKey = CacheKeys.ANALYTICS_DASHBOARD(userId);
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      res.locals.cacheHit = true;
+      return res.status(200).json(cached);
+    }
+
     const analytics = await analyticsService.getDashboardAnalytics(
       userId,
-      dueSoonPage,
-      dueSoonLimit
+      Number(req.query.dueSoonPage) || 1,
+      Number(req.query.dueSoonLimit) || 10
     );
-    res.status(200).json(analytics);
+
+    // Cache for 10 minutes
+    await redis.set(cacheKey, analytics, 600).catch(console.error);
+    return res.status(200).json(analytics);
   } catch (error) {
     next(error);
   }
@@ -27,14 +37,16 @@ export const getDashboardAnalytics = async (req, res, next) => {
 export const getUserAnalytics = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const dueSoonPage = Number(req.query.dueSoonPage) || 1;
-    const dueSoonLimit = Number(req.query.dueSoonLimit) || 10;
+    const cacheKey = CacheKeys.ANALYTICS(userId, 'user');
     const analytics = await analyticsService.getUserAnalytics(
       userId,
-      dueSoonPage,
-      dueSoonLimit
+      Number(req.query.dueSoonPage) || 1,
+      Number(req.query.dueSoonLimit) || 10
     );
-    res.status(200).json(analytics);
+
+    // Cache for 5 minutes
+    await redis.set(cacheKey, analytics, 300);
+    return res.status(200).json(analytics);
   } catch (error) {
     next(error);
   }
