@@ -1,4 +1,6 @@
 import * as goalService from '../services/goalService.js';
+import redis from '../config/redis.js';
+import { CacheKeys } from '../utils/cacheKeys.js';
 
 /**
  * Creates a new goal.
@@ -6,8 +8,7 @@ import * as goalService from '../services/goalService.js';
  */
 export const createGoal = async (req, res, next) => {
   try {
-    const goalData = req.body;
-    goalData.user = req.user.id;
+    const goalData = { ...req.body, user: req.user.id };
 
     if (goalData.rewardOptionId) {
       goalData.reward = goalData.rewardOptionId;
@@ -16,6 +17,10 @@ export const createGoal = async (req, res, next) => {
 
     const goal = await goalService.createGoal(goalData);
     await goal.populate('reward');
+
+    // Invalidate caches for the user’s goals
+    await redis.invalidateUser(goal.user.toString());
+    await redis.del(CacheKeys.GOAL(goal._id));
 
     res.status(201).json(goal);
   } catch (error) {
@@ -29,6 +34,13 @@ export const createGoal = async (req, res, next) => {
 export const getGoals = async (req, res, next) => {
   try {
     const userId = req.user.id;
+    const cacheKey = CacheKeys.GOALS(userId, req.query);
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      res.locals.cacheHit = true;
+      return res.status(200).json(cached);
+    }
+
     const result = await goalService.getGoals(userId, req.query);
     res.status(200).json(result);
   } catch (error) {
@@ -43,21 +55,24 @@ export const getGoals = async (req, res, next) => {
 export const getGoalById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'Goal ID is required' });
+    if (!id) return res.status(400).json({ message: 'Goal ID is required' });
+
+    const cacheKey = CacheKeys.GOAL(id);
+    const cachedGoal = await redis.get(cacheKey);
+    if (cachedGoal) {
+      res.locals.cacheHit = true;
+      return res.status(200).json(cachedGoal);
     }
 
     const goal = await goalService.getGoalById(id);
-    if (!goal) {
-      return res.status(404).json({ message: 'Goal not found' });
-    }
-
+    if (!goal) return res.status(404).json({ message: 'Goal not found' });
     if (!goal.user || goal.user.toString() !== req.user.id) {
       return res
         .status(403)
-        .json({ message: 'Forbidden: You do not have accesss to this goal' });
+        .json({ message: 'Forbidden: You do not have access to this goal' });
     }
 
+    await redis.set(cacheKey, goal, 600);
     res.status(200).json(goal);
   } catch (error) {
     next(error);
@@ -71,41 +86,31 @@ export const getGoalById = async (req, res, next) => {
 export const updateGoal = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'Goal ID is required' });
-    }
+    if (!id) return res.status(400).json({ message: 'Goal ID is required' });
 
-    const { progress /* eslint-disable-line no-unused-vars */, ...updateData } =
-      req.body;
-
-    // If a rewardOptionId is provided, use it as the reward reference.
+    // Exclude auto-calculated fields like progress
+    const { progress, ...updateData } = req.body;
     if (updateData.rewardOptionId) {
       updateData.reward = updateData.rewardOptionId;
       delete updateData.rewardOptionId;
     }
 
-    const goal = await goalService.getGoalById(id);
-    if (!goal) {
+    const existingGoal = await goalService.getGoalById(id);
+    if (!existingGoal)
       return res.status(404).json({ message: 'Goal not found' });
-    }
-    if (!goal.user || goal.user.toString() !== req.user.id) {
+    if (existingGoal.user.toString() !== req.user.id) {
       return res.status(403).json({
         message: 'Forbidden: You cannot update a goal that is not yours',
       });
     }
 
-    // eslint-disable-next-line no-unused-vars
-    const updatedGoal = await goalService.updateGoal(id, updateData);
-
-    // If the status is being updated to 'completed', recalculate the progress.
+    await goalService.updateGoal(id, updateData);
     if (updateData.status) {
       await goalService.updateGoalProgress(id);
     }
 
-    // re-fetch the goal to get the updated progress.
     const refreshedGoal = await goalService.getGoalById(id);
     await refreshedGoal.populate('reward');
-
     res.status(200).json(refreshedGoal);
   } catch (error) {
     next(error);
@@ -119,22 +124,19 @@ export const updateGoal = async (req, res, next) => {
 export const deleteGoal = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ message: 'Goal ID is required' });
-    }
+    if (!id) return res.status(400).json({ message: 'Goal ID is required' });
 
     const goal = await goalService.getGoalById(id);
-    if (!goal) {
-      return res.status(404).json({ message: 'Goal not found' });
-    }
+    if (!goal) return res.status(404).json({ message: 'Goal not found' });
     if (!goal.user || goal.user.toString() !== req.user.id) {
-      return res.status(403).json({
-        message: 'Forbidden: You cannot delete a goal that is not yours',
-      });
+      return res
+        .status(403)
+        .json({
+          message: 'Forbidden: You cannot delete a goal that is not yours',
+        });
     }
 
     await goalService.deleteGoal(id);
-    // 204 No Content indicates successful deletion with no response body.
     res.status(204).send();
   } catch (error) {
     next(error);
