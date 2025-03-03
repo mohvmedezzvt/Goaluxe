@@ -18,7 +18,7 @@ import {
   Textarea,
 } from "@heroui/react";
 import { api } from "@/lib/api";
-import { cn, validateDueDate } from "@/lib/utils";
+import { validateDueDate } from "@/lib/utils";
 
 /**
  * Props for the AddGoalModal component.

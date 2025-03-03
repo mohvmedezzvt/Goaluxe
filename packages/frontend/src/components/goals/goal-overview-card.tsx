@@ -76,4 +76,6 @@ const GoalOverviewCard = React.memo(
   }
 );
 
+GoalOverviewCard.displayName = "GoalOverviewCard";
+
 export default GoalOverviewCard;

@@ -5,13 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
-import {
-  LayoutDashboard,
-  Target,
-  Trophy,
-  UserCircle,
-  LogOut,
-} from "lucide-react";
+import { LayoutDashboard, Trophy, UserCircle, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -43,7 +37,7 @@ export function DashboardNav() {
       animate={open ? { width: "16rem" } : { width: "5rem" }}
       initial={{ width: "16rem" }}
       transition={{ ease: "backOut" }}
-      className="min-h-screen p-4 border-r bg-background overflow-hidden"
+      className="min-h-screen p-4 border-r bg-background overflow-hidden dark:bg-content1 dark:text-white"
     >
       <div className="space-y-4">
         <div
@@ -53,11 +47,11 @@ export function DashboardNav() {
           )}
         >
           <div className={cn(!open && "hidden")}>
-            <h2 className="text-2xl font-bold tracking-tight">Goaluxe</h2>
+            <h2 className="text-2xl font-bold tracking-tight ">Goaluxe</h2>
           </div>
           <div
             onClick={() => setOpen(!open)}
-            className="p-1 rounded-lg flex justify-center items-center hover:bg-slate-200 duration-300 w-fit h-fit"
+            className="p-1 rounded-lg flex justify-center items-center hover:bg-slate-200 dark:hover:bg-content2 duration-300 w-fit h-fit"
           >
             <ChevronRight
               className={cn("duration-500", open && "rotate-180 ")}
@@ -89,7 +83,7 @@ export function DashboardNav() {
           <Button
             variant="ghost"
             className={cn(
-              "w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50",
+              "w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-content2",
               !open && "!justify-center"
             )}
             onClick={logout}

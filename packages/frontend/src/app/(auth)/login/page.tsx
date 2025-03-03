@@ -18,7 +18,7 @@ export default function LoginPage() {
         <h1 className="text-2xl font-bold">Welcome back</h1>
         <AuthForm mode="login" />
         <p className="text-sm text-gray-600">
-          Don't have an account?{" "}
+          Don&apos;t have an account?
           <Link
             href="/register"
             className="font-medium text-blue-600 hover:text-blue-500"

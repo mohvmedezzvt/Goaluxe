@@ -32,11 +32,17 @@ axiosInstance.interceptors.request.use((config) => {
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
-      const newAccessToken = await auth.refresh();
-      if (newAccessToken) {
-        error.config.headers.Authorization = `Bearer ${newAccessToken}`;
-        return axiosInstance(error.config); // Retry the original request with new token
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const newAccessToken = await auth.refresh();
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        sessionStorage.clear();
+        localStorage.clear();
+        return Promise.reject(refreshError);
       }
     }
     return Promise.reject(error);
@@ -58,13 +64,11 @@ export const api = {
       const { data } = await axiosInstance.get<T>(endpoint);
       return { success: true, data };
     } catch (error: any) {
-      return {
-        success: false,
-        error:
-          error.response?.data?.message ||
+      throw new Error(
+        error.response?.data?.message ||
           error.response?.data?.error ||
-          "Request failed",
-      };
+          "Request failed"
+      );
     }
   },
 
@@ -100,6 +104,28 @@ export const api = {
   put: async <T>(endpoint: string, body: any): Promise<ApiResponse<T>> => {
     try {
       const { data } = await axiosInstance.put<T>(endpoint, body);
+      return { success: true, data };
+    } catch (error: any) {
+      return {
+        success: false,
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Request failed",
+      };
+    }
+  },
+
+  /**
+   * PATCH request to the API.
+   *
+   * @param {string} endpoint - The API endpoint to call.
+   * @param {any} body - The body to send with the request.
+   * @returns {Promise<ApiResponse<T>>} - The API response wrapped in a success/failure object.
+   */
+  patch: async <T>(endpoint: string, body: any): Promise<ApiResponse<T>> => {
+    try {
+      const { data } = await axiosInstance.patch<T>(endpoint, body);
       return { success: true, data };
     } catch (error: any) {
       return {
@@ -154,7 +180,7 @@ export const auth = {
       if (!response.success) throw new Error("Login failed");
 
       const data = response.data as LoginResponse;
-      let accessToken = data.token;
+      const accessToken = data.token;
       const user = data.user;
 
       if (response.success && response.data) {
@@ -167,11 +193,12 @@ export const auth = {
         success: true,
         data: { token: accessToken, user },
       };
-    } catch (err) {
-      return {
-        success: false,
-        error: err instanceof Error ? err.message : "Login failed",
-      };
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Request failed"
+      );
     }
   },
 
@@ -202,11 +229,12 @@ export const auth = {
       return {
         success: true,
       };
-    } catch (err) {
-      return {
-        success: false,
-        error: err instanceof Error ? err.message : "Registration failed",
-      };
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Request failed"
+      );
     }
   },
 
@@ -226,10 +254,14 @@ export const auth = {
 
       sessionStorage.setItem("token", accessToken);
       return accessToken;
-    } catch (error) {
+    } catch (error: any) {
       sessionStorage.clear();
       localStorage.clear();
-      throw error;
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Request failed"
+      );
     }
   },
 
@@ -244,11 +276,12 @@ export const auth = {
       }
       sessionStorage.clear();
       localStorage.clear();
-    } catch (err) {
-      return {
-        success: false,
-        error: err instanceof Error ? err.message : "Logout failed",
-      };
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Request failed"
+      );
     }
   },
 
