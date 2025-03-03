@@ -5,11 +5,12 @@ FROM node:18-alpine
 WORKDIR /app
 
 # For caching, copy package.json and lock file first
-COPY package.json ./
+COPY packages/backend/package.json ./
+COPY pnpm-lock.yaml ./
 RUN npm install -g pnpm && pnpm install
 
 # Copy the rest of backend source code into the container
-COPY . .
+COPY packages/backend ./
 
 # Expose the port that the server listens on
 EXPOSE 3001

@@ -1,24 +1,24 @@
-version: '3.8'
+version: "3.8"
 
 services:
   backend:
     build:
-      context: ./packages/backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: packages/backend/Dockerfile
     ports:
-      - "3001:3000"  # Maps host port 3001 to container's port 3000
+      - "3001:3000" # Maps host port 3001 to container's port 3000
     environment:
       - NODE_ENV=development
     volumes:
-      - ./packages/backend:/app  # Optional: mounts local code for live reloading
+      - ./packages/backend:/app # Optional: mounts local code for live reloading
 
   frontend:
     build:
       context: ./packages/frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"  # Maps host port 3000 to container's port 3000
+      - "3000:3000" # Maps host port 3000 to container's port 3000
     environment:
       - NODE_ENV=development
     volumes:
-      - ./packages/frontend:/app  # Optional: mounts local code for live reloading
+      - ./packages/frontend:/app # Optional: mounts local code for live reloading
