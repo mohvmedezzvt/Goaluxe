@@ -132,7 +132,7 @@ export const getDashboardAnalytics = async (
 
   const common = await getCommonAnalytics(userId, dueSoonPage, dueSoonLimit);
   // Exclude internal values that are not needed on the dashboard
-  const { totalCount, ...dashboardAnalytics } = common;
+  const { totalCount: _totalCount, ...dashboardAnalytics } = common;
 
   try {
     await redis.set(cacheKey, dashboardAnalytics, 600);
