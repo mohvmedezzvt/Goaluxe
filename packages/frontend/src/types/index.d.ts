@@ -16,6 +16,7 @@ interface Goal {
   createdAt: Date | string;
 }
 interface Subtask {
+  goal: string;
   id: string;
   title: string;
   status: "active" | "completed" | "cancelled";
