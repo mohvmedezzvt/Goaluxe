@@ -20,7 +20,7 @@ interface FilterParams {
  * Zustand store for managing filter states in the application.
  * Provides functions to update and reset filters.
  */
-const useFilter = create<FilterParams>((set, remove) => ({
+const useFilter = create<FilterParams>((set) => ({
   status: null,
   sortBy: null,
   search: null,
