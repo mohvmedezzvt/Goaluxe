@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CalendarDate } from "@internationalized/date";
 import { api } from "@/lib/api";
 import { cn, validateDueDate } from "@/lib/utils";
 import useEdit from "@/stores/useEdit";
@@ -15,7 +13,14 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
+  Input,
+  Textarea,
+  DatePicker,
+  CalendarDate as HeroUIDate,
+  Select,
+  SelectItem,
 } from "@heroui/react";
+import { format } from "date-fns";
 
 /**
  * EditGoalModal Component
@@ -27,12 +32,12 @@ import {
  * @returns {JSX.Element} The rendered EditGoalModal component.
  *
  * @example
- * // Usage in a parent component
+ *  Usage in a parent component
  * const [isEditing, setEdit] = useState<string | null>(null);
  *
  * <EditGoalModal />
  *
- * // When you want to edit a goal, set the `isEditing` state to the goal's ID:
+ *  When you want to edit a goal, set the `isEditing` state to the goal's ID:
  * setEdit("goal-id-123");
  */
 export function EditGoalModal() {
@@ -40,23 +45,38 @@ export function EditGoalModal() {
   const { isEditing, setEdit } = useEdit();
 
   // State for form data and validation errors
-  const [formData, setFormData] = useState<Partial<Goal>>({
+  const [formData, setFormData] = useState<{
+    title: string;
+    description: string;
+    dueDate: HeroUIDate | null;
+    status: "active" | "completed" | "cancelled";
+  }>({
     title: "",
     description: "",
-    dueDate: "",
+    dueDate: null,
     status: "active",
   });
 
   const [isDateError, setIsDateError] = useState(false);
 
   // Mutation to update the goal
-  const { mutate, isPending } = useMutation({
+  const { mutate, isPending } = useMutation<
+    any,
+    Error,
+    {
+      title: Goal["title"];
+      status: Goal["status"];
+      dueDate: Goal["dueDate"];
+      description: Goal["description"];
+    }
+  >({
     mutationKey: ["goal", isEditing],
-    mutationFn: async () => {
-      return await api.put(`goals/${isEditing}`, formData);
+    mutationFn: async (data) => {
+      return await api.put(`goals/${isEditing}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["goal", isEditing] });
+      queryClient.invalidateQueries({ queryKey: ["Goals"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
       setEdit(null); // Close modal after successful update
     },
@@ -72,37 +92,51 @@ export function EditGoalModal() {
     enabled: !!isEditing, // Only fetch if `isEditing` is truthy
   });
 
-  // Effect to populate form data when the goal is fetched
   useEffect(() => {
-    if (goal) {
-      const dueDate = goal.dueDate
-        ? new Date(goal.dueDate).toISOString().split("T")[0]
-        : "";
+    if (!goal) return;
 
-      setFormData({
-        title: goal.title || "",
-        description: goal.description || "",
-        dueDate,
-        status: goal.status || "active",
-      });
-    }
+    // Format the due date if it exists
+    const dueDate = goal.dueDate ? new Date(goal.dueDate) : null;
+
+    // Prepare the form data
+    const formattedFormData = {
+      title: goal.title || "",
+      description: goal.description || "",
+      dueDate: dueDate
+        ? new CalendarDate(
+            dueDate.getFullYear(), // Year
+            dueDate.getMonth() + 1, // Month (JavaScript months are 0-indexed)
+            dueDate.getDate() // Day
+          )
+        : null,
+      status: goal.status || "active",
+    };
+
+    // Update the form data state
+    setFormData(formattedFormData);
   }, [goal]);
 
   /**
    * Handles setting the due date and validates it.
    *
-   * @param {string} dueDate - The due date string in YYYY-MM-DD format.
+   * @param {CalendarDate | null} dueDate - The due date selected from the DatePicker.
    */
-  const handleSetDueDate = (dueDate: string) => {
-    const isValidDate = validateDueDate(dueDate);
-    setIsDateError(!isValidDate);
+  const handleSetDueDate = (dueDate: HeroUIDate | null) => {
+    const formattedDueDate = dueDate
+      ? format(dueDate.toDate("UTC"), "yyyy-MM-dd")
+      : null;
 
-    if (isValidDate) {
-      setFormData((prev) => ({
-        ...prev,
-        dueDate,
-      }));
+    const isValid = validateDueDate(formattedDueDate as string);
+
+    if (formattedDueDate != null) {
+      setIsDateError(!isValid);
     }
+
+    // Keep the CalendarDate in state for the DatePicker
+    setFormData((prev) => ({
+      ...prev,
+      dueDate,
+    }));
   };
 
   /**
@@ -110,12 +144,31 @@ export function EditGoalModal() {
    *
    * @param {React.FormEvent} e - The form submission event.
    */
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isDateError) {
-      mutate();
-    }
-  };
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+
+      if (!formData.dueDate) {
+        setIsDateError(true);
+        return;
+      }
+
+      if (isDateError) return;
+
+      const formattedDueDate = format(
+        formData.dueDate.toDate("UTC"),
+        "yyyy-MM-dd"
+      );
+
+      mutate({
+        title: formData.title,
+        description: formData.description,
+        dueDate: formattedDueDate,
+        status: formData.status,
+      });
+    },
+    [formData, isDateError, mutate]
+  );
 
   return (
     <Modal backdrop="blur" isOpen={!!isEditing} onClose={() => setEdit(null)}>
@@ -126,9 +179,10 @@ export function EditGoalModal() {
             <div className="space-y-4 py-4">
               {/* Title Input */}
               <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
                 <Input
+                  isRequired
                   id="title"
+                  label="Title"
                   value={formData.title}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, title: e.target.value }))
@@ -140,9 +194,10 @@ export function EditGoalModal() {
 
               {/* Description Input */}
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
                 <Textarea
+                  isRequired
                   id="description"
+                  label="Description"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -151,35 +206,32 @@ export function EditGoalModal() {
                     }))
                   }
                   placeholder="Describe your goal"
-                  required
                 />
               </div>
 
               {/* Due Date Input */}
               <div className="space-y-2">
-                <Label htmlFor="dueDate">Target Date</Label>
-                <Input
+                <DatePicker
+                  isRequired
                   id="dueDate"
-                  type="date"
+                  isInvalid={isDateError}
+                  errorMessage="Due date cannot be in the past."
+                  color={isDateError ? "danger" : "default"}
+                  label="Target Date"
                   className={cn(isDateError && "border-red-500 text-red-500")}
-                  value={formData.dueDate as string}
-                  onChange={(e) => handleSetDueDate(e.target.value)}
-                  required
+                  value={formData.dueDate}
+                  onChange={(e) => handleSetDueDate(e)}
                 />
-                {isDateError && (
-                  <p className="text-red-500">
-                    Due date cannot be in the past.
-                  </p>
-                )}
               </div>
 
               {/* Status Select */}
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <select
+                <Select
+                  isRequired
                   id="status"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
-                  value={formData.status}
+                  label="status"
+                  placeholder="Set status"
+                  selectedKeys={[formData.status]}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
@@ -188,10 +240,16 @@ export function EditGoalModal() {
                   }
                   required
                 >
-                  <option value="active">Active</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
+                  <SelectItem key="active" textValue="active">
+                    Active
+                  </SelectItem>
+                  <SelectItem key="completed" textValue="completed">
+                    Completed
+                  </SelectItem>
+                  <SelectItem key="cancelled" textValue="cancelled">
+                    Cancelled
+                  </SelectItem>
+                </Select>
               </div>
             </div>
           </ModalBody>
