@@ -89,7 +89,7 @@ export const updateGoal = async (req, res, next) => {
     if (!id) return res.status(400).json({ message: 'Goal ID is required' });
 
     // Exclude auto-calculated fields like progress
-    const { progress, ...updateData } = req.body;
+    const { progress: _progress, ...updateData } = req.body;
     if (updateData.rewardOptionId) {
       updateData.reward = updateData.rewardOptionId;
       delete updateData.rewardOptionId;
@@ -129,11 +129,9 @@ export const deleteGoal = async (req, res, next) => {
     const goal = await goalService.getGoalById(id);
     if (!goal) return res.status(404).json({ message: 'Goal not found' });
     if (!goal.user || goal.user.toString() !== req.user.id) {
-      return res
-        .status(403)
-        .json({
-          message: 'Forbidden: You cannot delete a goal that is not yours',
-        });
+      return res.status(403).json({
+        message: 'Forbidden: You cannot delete a goal that is not yours',
+      });
     }
 
     await goalService.deleteGoal(id);

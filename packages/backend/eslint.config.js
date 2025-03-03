@@ -18,7 +18,7 @@ export default [
     },
     rules: {
       'no-console': 'off', // Allow console.log statements
-      'no-unused-vars': 'warn', // Warn on unused variables
+      'no-unused-vars': ['warn', { varsIgnorePattern: '^_' }],
       'import/no-unresolved': 'error',
       'import/extensions': ['error', 'always', { js: 'always' }],
     },
