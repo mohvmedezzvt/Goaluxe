@@ -8,6 +8,8 @@ import ErrorBoundary from "@/components/error/error-boundary";
 import Error from "@/components/error/error";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import ThemeProvider from "@/providers/theme-provider";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -15,7 +17,7 @@ export const metadata: Metadata = {
   description: "Set goals, track progress, and earn rewards with Goaluxe",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -23,18 +25,20 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn(inter.className)} suppressHydrationWarning>
-        <ErrorBoundary FallbackComponent={Error}>
-          <QueryClientProvider>
-            <HeroUIProvider>
-              <div id="app" suppressHydrationWarning>
-                <ToastProvider placement="top-right" />
-                <Header />
-                {children}
-                <Footer />
-              </div>
-            </HeroUIProvider>
-          </QueryClientProvider>
-        </ErrorBoundary>
+        <ThemeProvider>
+          <ErrorBoundary FallbackComponent={Error}>
+            <QueryClientProvider>
+              <HeroUIProvider>
+                <div id="app" suppressHydrationWarning>
+                  <ToastProvider placement="top-right" />
+                  <Header />
+                  {children}
+                  <Footer />
+                </div>
+              </HeroUIProvider>
+            </QueryClientProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );
