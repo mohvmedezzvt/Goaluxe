@@ -16,7 +16,7 @@ class RedisService {
 
   initialize() {
     this.client = createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379',
+      url: process.env.REDIS_URL || 'redis://redis:6379', // Use 'redis' as the host
       pingInterval: 10_000,
     });
 

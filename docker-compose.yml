@@ -1,6 +1,13 @@
 version: "3.8"
 
 services:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
   backend:
     build:
       context: .
@@ -8,10 +15,13 @@ services:
     ports:
       - "3001:3000"
     environment:
-      - NODE_ENV=development # Use "development" or "production"
+      - NODE_ENV=development
+      - REDIS_URL=redis://redis:6379 # Use the service name
     volumes:
-      - ./packages/backend:/app
-      - /app/node_modules
+      - ./packages/backend:/app/packages/backend
+      - /app/packages/backend/node_modules
+    depends_on:
+      - redis
 
   frontend:
     build:
@@ -20,7 +30,10 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development # Use "development" or "production"
+      - NODE_ENV=development
     volumes:
       - ./packages/frontend:/app
       - /app/node_modules
+
+volumes:
+  redis_data:

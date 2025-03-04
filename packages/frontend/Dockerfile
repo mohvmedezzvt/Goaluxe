@@ -17,7 +17,7 @@ RUN pnpm install
 COPY . .
 
 # Build the application
-RUN pnpm run build
+RUN pnpm build
 
 # Stage 2: Create a lightweight production image
 FROM node:18-alpine
