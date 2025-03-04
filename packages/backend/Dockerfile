@@ -4,13 +4,17 @@ FROM node:18-alpine
 # Set the working directory in the container
 WORKDIR /app
 
-# For caching, copy package.json and lock file first
-COPY packages/backend/package.json ./
-COPY pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install
+# monorepo root files needed for workspace installs
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Copy the rest of backend source code into the container
-COPY packages/backend ./
+# Copy the backend package folder into the container
+COPY packages/backend packages/backend
+
+# Install pnpm globally and install dependencies only for the backend package
+RUN npm install -g pnpm && pnpm install --filter ./packages/backend...
+
+# Change working directory to the backend package
+WORKDIR /app/packages/backend
 
 # Expose the port that the server listens on
 EXPOSE 3001
