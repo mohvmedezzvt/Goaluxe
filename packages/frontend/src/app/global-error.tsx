@@ -33,8 +33,8 @@ export default function GlobalError({
                 Critical Error
               </h1>
               <p className="mt-4 text-base text-gray-600">
-                We've encountered a serious problem. Our team has been notified
-                and is working to resolve the issue.
+                We&apos;ve encountered a serious problem. Our team has been
+                notified and is working to resolve the issue.
               </p>
             </div>
 
