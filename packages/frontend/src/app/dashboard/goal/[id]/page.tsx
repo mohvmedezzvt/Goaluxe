@@ -74,7 +74,7 @@ const GoalDetailsPage = () => {
   }
 
   return (
-    <div className="animate-in fade-in duration-500 p-4">
+    <div className=" animate-in fade-in duration-500 p-4">
       <div className="max-w-[1500px] mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
           {/* Header Section */}
@@ -93,7 +93,7 @@ const GoalDetailsPage = () => {
               <Dropdown placement="left">
                 <DropdownTrigger className="w-fit !min-w-0 !h-auto">
                   <Button
-                    className="bg-white hover:bg-default-200 !p-1 !min-w-0 rounded-full !w-fit transition-colors"
+                    className="bg-white dark:bg-black hover:bg-default-200 !p-1 !min-w-0 rounded-full !w-fit transition-colors"
                     aria-label="More options"
                   >
                     <EllipsisVertical size={20} />
@@ -102,7 +102,7 @@ const GoalDetailsPage = () => {
                 <DropdownMenu className="space-y-3">
                   {/* Edit Goal Option */}
                   <DropdownItem key="edit" onPress={() => setEdit(String(id))}>
-                    <div className="flex items-center justify-between">
+                    <div className="flex text-foreground-800  items-center justify-between">
                       <p>Edit goal</p>
                       <Pencil size={17} />
                     </div>
