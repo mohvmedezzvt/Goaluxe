@@ -5,7 +5,7 @@ import withPathLayout from "./hoc/with-path-layout";
 const Footer = () => {
   return (
     <footer className="border-t py-12 bg-white dark:bg-gray-900 text-zinc-900 dark:text-white">
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-4 gap-8">
           <div>
             <h3 className="text-zinc-900 dark:text-white font-bold text-xl mb-4">
