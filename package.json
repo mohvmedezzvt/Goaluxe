@@ -6,7 +6,7 @@
   ],
   "scripts": {
     "start": "lerna run start --scope=backend",
-    "dev": "concurrently \"lerna run start --scope=backend\"  \"lerna run dev --scope=frontend\""
+    "dev": " lerna run dev --scope=frontend"
   },
   "devDependencies": {
     "@nrwl/cli": "^15.9.3",
