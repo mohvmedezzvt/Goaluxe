@@ -47,7 +47,6 @@ export function AddGoalModal({ open, onOpenChange }: AddGoalModalProps) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const titleInputRef = useRef<HTMLInputElement>(null);
-
   // State for form data and validation errors
   const [formData, setFormData] = useState<{
     title: string;
@@ -159,8 +158,10 @@ export function AddGoalModal({ open, onOpenChange }: AddGoalModalProps) {
 
   return (
     <Modal backdrop="blur" isOpen={open} onOpenChange={onOpenChange}>
-      <ModalContent>
-        <ModalHeader>Add New Goal</ModalHeader>
+      <ModalContent className="text-foreground-800">
+        <ModalHeader>
+          <p>Add New Goal</p>
+        </ModalHeader>
         <Form
           onSubmit={handleSubmit}
           className="!items-end"

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDate } from "@internationalized/date";
 import { api } from "@/lib/api";
@@ -10,6 +9,7 @@ import useEdit from "@/stores/useEdit";
 import {
   Modal,
   ModalBody,
+  Button,
   ModalContent,
   ModalFooter,
   ModalHeader,
@@ -172,7 +172,7 @@ export function EditGoalModal() {
 
   return (
     <Modal backdrop="blur" isOpen={!!isEditing} onClose={() => setEdit(null)}>
-      <ModalContent>
+      <ModalContent className="text-foreground-800">
         <form onSubmit={handleSubmit}>
           <ModalHeader>Edit Goal</ModalHeader>
           <ModalBody>
@@ -230,6 +230,9 @@ export function EditGoalModal() {
                   isRequired
                   id="status"
                   label="status"
+                  classNames={{
+                    selectorIcon: "text-foreground-800",
+                  }}
                   placeholder="Set status"
                   selectedKeys={[formData.status]}
                   onChange={(e) =>
@@ -240,13 +243,25 @@ export function EditGoalModal() {
                   }
                   required
                 >
-                  <SelectItem key="active" textValue="active">
+                  <SelectItem
+                    className="text-foreground-800"
+                    key="active"
+                    textValue="active"
+                  >
                     Active
                   </SelectItem>
-                  <SelectItem key="completed" textValue="completed">
+                  <SelectItem
+                    className="text-foreground-800"
+                    key="completed"
+                    textValue="completed"
+                  >
                     Completed
                   </SelectItem>
-                  <SelectItem key="cancelled" textValue="cancelled">
+                  <SelectItem
+                    className="text-foreground-800"
+                    key="cancelled"
+                    textValue="cancelled"
+                  >
                     Cancelled
                   </SelectItem>
                 </Select>
@@ -257,8 +272,8 @@ export function EditGoalModal() {
             {/* Close Button */}
             <Button
               type="button"
-              variant="outline"
-              onClick={() => setEdit(null)}
+              className="border"
+              onPress={() => setEdit(null)}
               disabled={isPending}
             >
               Close

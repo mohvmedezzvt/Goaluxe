@@ -77,7 +77,9 @@ const AddTaskModal = ({ open, onOpenChange, goalId }: AddTaskModalProps) => {
       await api.post(`/goals/${goalId}/subtasks`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["goal", goalId] }); // Refresh the goal's data
+      queryClient.invalidateQueries({
+        queryKey: ["subtasks", `goal-${goalId}`],
+      }); // Refresh the goal's data
       onOpenChange(false); // Close the modal
     },
   });
@@ -165,7 +167,7 @@ const AddTaskModal = ({ open, onOpenChange, goalId }: AddTaskModalProps) => {
         }
       }}
     >
-      <ModalContent>
+      <ModalContent className="text-foreground-800">
         <ModalHeader>New Task</ModalHeader>
         <Form
           onSubmit={handleSubmit}
