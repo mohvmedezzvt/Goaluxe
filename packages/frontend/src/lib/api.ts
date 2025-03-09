@@ -275,7 +275,7 @@ export const auth = {
         throw new Error("Logout failed");
       }
       sessionStorage.clear();
-      localStorage.clear();
+      localStorage.removeItem("user");
     } catch (error: any) {
       throw new Error(
         error.response?.data?.message ||
