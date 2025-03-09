@@ -25,20 +25,24 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn(inter.className)} suppressHydrationWarning>
-        <ThemeProvider>
-          <ErrorBoundary FallbackComponent={Error}>
-            <QueryClientProvider>
-              <HeroUIProvider>
-                <div id="app" suppressHydrationWarning>
+        <QueryClientProvider>
+          <HeroUIProvider>
+            <ThemeProvider>
+              <ErrorBoundary FallbackComponent={Error}>
+                <div
+                  id="app"
+                  className="text-foreground-800"
+                  suppressHydrationWarning
+                >
                   <ToastProvider placement="top-right" />
                   <Header />
                   {children}
                   <Footer />
                 </div>
-              </HeroUIProvider>
-            </QueryClientProvider>
-          </ErrorBoundary>
-        </ThemeProvider>
+              </ErrorBoundary>
+            </ThemeProvider>
+          </HeroUIProvider>
+        </QueryClientProvider>
       </body>
     </html>
   );

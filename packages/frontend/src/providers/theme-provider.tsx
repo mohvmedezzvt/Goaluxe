@@ -1,10 +1,17 @@
 "use client";
-import React, { ReactNode } from "react";
+import React, { ReactNode, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import useTheme from "@/stores/useTheme";
 
 const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const { IsTheme } = useTheme();
-  return <div className={IsTheme}>{children}</div>;
+  const { theme } = useTheme();
+
+  // Apply the theme class to the body element after the component mounts
+  useEffect(() => {
+    document.body.className = cn(theme, "text-foreground bg-background");
+  }, [theme]);
+
+  return <>{children}</>;
 };
 
 export default ThemeProvider;
