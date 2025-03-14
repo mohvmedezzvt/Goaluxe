@@ -22,7 +22,7 @@ export default function Home() {
     <main className="pt-[4rem]">
       {/* Hero Section */}
       <motion.section
-        className="h-full min-h-screen flex justify-center items-center relative overflow-hidden dark:bg-black"
+        className="h-full min-h-screen flex justify-center items-center relative overflow-hidden "
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
@@ -42,7 +42,7 @@ export default function Home() {
             >
               <motion.div className="space-y-4">
                 <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-zinc-900 dark:text-white leading-tight">
-                  Transform Your Goals into
+                  Transform Your <br /> Goals into
                   <br className="hidden lg:block" />
                   <span className="bg-gradient-to-r from-pink-500 to-orange-500 bg-clip-text text-transparent">
                     Tangible Success

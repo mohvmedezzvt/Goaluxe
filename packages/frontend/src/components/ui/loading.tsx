@@ -3,7 +3,7 @@ import styled from "styled-components";
 
 const Loader = () => {
   return (
-    <StyledWrapper className="w-full h-full absolute flex items-center justify-center">
+    <StyledWrapper className="w-full h-full absolute flex items-center justify-center ">
       <div className="wrapper">
         <div className="circle" />
         <div className="circle" />

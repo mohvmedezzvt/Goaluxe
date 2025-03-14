@@ -1,7 +1,7 @@
 import useTheme from "@/stores/useTheme";
 import { Button } from "@heroui/react";
 import { Sun, Moon } from "lucide-react";
-import React, { useEffect } from "react";
+import React from "react";
 
 const ThemeSwitch = () => {
   const { theme, toggleTheme } = useTheme();
