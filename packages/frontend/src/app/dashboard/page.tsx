@@ -153,7 +153,7 @@ export default function DashboardPage() {
         <Button
           onPress={() => setShowAddDialog(true)}
           size="lg"
-          className="w-full sm:w-auto bg-black text-white"
+          className="w-full sm:w-auto"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add New Goal

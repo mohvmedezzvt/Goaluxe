@@ -39,7 +39,7 @@ const DeleteModal = () => {
       isOpen={!!isDeleting}
       onClose={() => setDelete(null)}
     >
-      <ModalContent>
+      <ModalContent className="text-foreground-800">
         <ModalHeader> Are you sure?</ModalHeader>
         <ModalBody>
           This action cannot be undone. This will permanently delete your goal

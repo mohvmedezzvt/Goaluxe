@@ -3,10 +3,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
+import { ScrollParallax } from "react-just-parallax";
 import {
   ArrowRight,
   LineChart,
-  Play,
   RefreshCw,
   Target,
   Trophy,
@@ -15,30 +15,24 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { VelocityScroll } from "@/components/ui/text-velocity";
+import { FlickeringGrid } from "@/components/ui/flickering-grid";
 
 export default function Home() {
   return (
-    <main className="scroll-smooth">
-      {/* Enhanced Hero Section */}
+    <main className="pt-[4rem]">
+      {/* Hero Section */}
       <motion.section
-        className="min-h-screen flex justify-center items-center relative overflow-hidden"
+        className="h-full min-h-screen flex justify-center items-center relative overflow-hidden "
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
       >
-        <motion.div
-          className="absolute inset-0 z-0 bg-gradient-to-br from-gray-100 via-blue-50 to-gray-200 dark:from-gray-800 dark:via-blue-900/20 dark:to-gray-900"
-          animate={{
-            backgroundPosition: ["0% 0%", "100% 100%"],
-          }}
-          transition={{
-            duration: 15,
-            repeat: Number.POSITIVE_INFINITY,
-            repeatType: "reverse",
-          }}
+        <FlickeringGrid
+          className="absolute z-0 inset-0 size-full"
+          color={"#ec4899"}
         />
 
-        <div className="relative z-10 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
               className="space-y-8"
@@ -48,8 +42,8 @@ export default function Home() {
             >
               <motion.div className="space-y-4">
                 <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-zinc-900 dark:text-white leading-tight">
-                  Transform Your Goals into
-                  <br className="hidden lg:block" />{" "}
+                  Transform Your <br /> Goals into
+                  <br className="hidden lg:block" />
                   <span className="bg-gradient-to-r from-pink-500 to-orange-500 bg-clip-text text-transparent">
                     Tangible Success
                   </span>
@@ -71,15 +65,40 @@ export default function Home() {
                     <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
+              </motion.div>
 
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-full sm:w-auto group border-zinc-300 dark:border-gray-600 text-zinc-900 dark:text-white hover:bg-zinc-50/50 dark:hover:bg-gray-800/50 backdrop-blur-sm"
-                >
-                  <Play className="mr-2 h-4 w-4 text-pink-500 group-hover:text-orange-500 transition-colors" />
-                  Watch Demo
-                </Button>
+              <motion.div
+                className="relative lg:ml-auto lg:hidden block"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <div className="relative group w-fit">
+                  <div className="absolute inset-0 bg-gradient-to-r w-full from-pink-500 to-orange-500 blur-2xl dark:bg-white opacity-30 group-hover:opacity-40 transition-opacity " />
+                  <Card className="relative w-fit rounded-3xl p-6">
+                    <Image
+                      src="https://kzminnsnzri9g0fv76u2.lite.vusercontent.net/placeholder.svg?height=300&width=500"
+                      alt="Goaluxe Dashboard Preview"
+                      width={500}
+                      height={300}
+                      className="rounded-xl shadow-lg"
+                      priority
+                    />
+
+                    <ScrollParallax isAbsolutelyPositioned>
+                      <motion.div
+                        className="absolute top-5 -right-4 bg-gradient-to-r from-pink-500 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center gap-2"
+                        transition={{
+                          duration: 2,
+                          repeat: Number.POSITIVE_INFINITY,
+                        }}
+                      >
+                        <Zap className="h-4 w-4 animate-pulse" />
+                        <span>Early Access Available</span>
+                      </motion.div>
+                    </ScrollParallax>
+                  </Card>
+                </div>
               </motion.div>
 
               <div className="grid grid-cols-3 gap-4 pt-8">
@@ -106,16 +125,16 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Enhanced Preview Card */}
+            {/* Preview Card */}
             <motion.div
-              className="relative lg:ml-auto"
+              className="relative lg:ml-auto hidden lg:block"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-orange-500 blur-2xl opacity-30 group-hover:opacity-40 transition-opacity" />
-                <Card className="relative w-full max-w-[500px] rounded-3xl p-6">
+              <div className="relative group w-full h-full max-sm:max-w-80">
+                <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-orange-500 blur-2xl dark:bg-white opacity-30 group-hover:opacity-40 transition-opacity" />
+                <Card className="relative w-full h-full rounded-3xl p-6">
                   <Image
                     src="https://kzminnsnzri9g0fv76u2.lite.vusercontent.net/placeholder.svg?height=300&width=500"
                     alt="Goaluxe Dashboard Preview"
@@ -124,19 +143,19 @@ export default function Home() {
                     className="rounded-xl shadow-lg"
                     priority
                   />
-                  <motion.div
-                    className="absolute -top-4 right-4 bg-gradient-to-r from-pink-500 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center gap-2"
-                    animate={{
-                      scale: [1, 1.05, 1],
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Number.POSITIVE_INFINITY,
-                    }}
-                  >
-                    <Zap className="h-4 w-4 animate-pulse" />
-                    <span>Early Access Available</span>
-                  </motion.div>
+
+                  <ScrollParallax isAbsolutelyPositioned>
+                    <motion.div
+                      className="absolute top-5 -right-4 bg-gradient-to-r from-pink-500 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center gap-2"
+                      transition={{
+                        duration: 2,
+                        repeat: Number.POSITIVE_INFINITY,
+                      }}
+                    >
+                      <Zap className="h-4 w-4 animate-pulse" />
+                      <span>Early Access Available</span>
+                    </motion.div>
+                  </ScrollParallax>
                 </Card>
               </div>
             </motion.div>
@@ -146,7 +165,7 @@ export default function Home() {
 
       {/* How It Works Section */}
       <section className="py-20 bg-zinc-50 dark:bg-gray-800">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="text-center max-w-2xl mx-auto mb-16"
             initial={{ opacity: 0, y: 20 }}
@@ -251,9 +270,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Enhanced CTA Section */}
+      {/* CTA Section */}
       <section className="py-20 bg-zinc-900 dark:bg-gray-950">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div className="relative bg-gradient-to-br from-pink-500/20 to-orange-500/20 rounded-3xl p-8 shadow-2xl overflow-hidden">
             <div className="absolute inset-0 bg-[url('/placeholder.svg')] bg-repeat opacity-10" />
             <div className="relative z-10">

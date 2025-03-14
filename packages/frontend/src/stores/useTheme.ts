@@ -1,22 +1,31 @@
+// stores/useTheme.ts
 import { create } from "zustand";
-import { persist } from "zustand/middleware"; // Import the persist middleware
 
-interface ThemeState {
-  IsTheme: "dark" | "light";
-  setTheme: (value: "dark" | "light") => void;
+type Theme = "light" | "dark";
+
+interface ThemeStore {
+  theme: Theme;
+  toggleTheme: () => void;
 }
 
-const useTheme = create<ThemeState>()(
-  persist(
-    // Wrap the store with persist
-    (set) => ({
-      IsTheme: "light", // Default theme
-      setTheme: (value) => set({ IsTheme: value }), // Function to update the theme
-    }),
-    {
-      name: "theme-storage", // Unique name for localStorage
-    }
-  )
-);
+// Initialize with a default theme for SSR
+const useTheme = create<ThemeStore>((set) => ({
+  theme: "light", // Default theme for SSR
+  toggleTheme: () => {
+    set((state) => {
+      const newTheme = state.theme === "light" ? "dark" : "light";
+      localStorage.setItem("theme", newTheme); // Save to localStorage
+      return { theme: newTheme };
+    });
+  },
+}));
+
+// Sync the theme from localStorage on the client side
+if (typeof window !== "undefined") {
+  const savedTheme = localStorage.getItem("theme") as Theme | null;
+  if (savedTheme) {
+    useTheme.setState({ theme: savedTheme });
+  }
+}
 
 export default useTheme;

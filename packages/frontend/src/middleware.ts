@@ -123,8 +123,6 @@ export async function middleware(request: NextRequest) {
         log("Token expired at root, attempting refresh");
         return handleTokenRefresh();
       }
-      log("Auto sign-in: Redirecting to dashboard");
-      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 
