@@ -132,14 +132,25 @@ export const updateGoalProgress = async (goalId) => {
       {
         $group: {
           _id: '$goal',
-          avgProgress: { $avg: { $ifNull: ['$progress', 0] } },
+          completedCount: {
+            $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] },
+          },
+          totalCount: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          progressPercentage: {
+            $multiply: [{ $divide: ['$completedCount', '$totalCount'] }, 100],
+          },
         },
       },
     ]);
-    newProgress =
-      aggregation.length > 0
-        ? Number(aggregation[0].avgProgress.toFixed(2))
-        : 0;
+
+    if (aggregation.length > 0) {
+      const rawProgress = aggregation[0].progressPercentage;
+      newProgress = Math.round(rawProgress * 100) / 100;
+    }
   }
 
   await Goal.findByIdAndUpdate(goalId, { progress: newProgress });
