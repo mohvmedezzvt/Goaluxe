@@ -19,7 +19,7 @@ interface Subtask {
   goal: string;
   id: string;
   title: string;
-  status: "active" | "completed" | "cancelled";
+  status: "in-progress" | "completed" | "pending";
   createdAt: Date | string;
   dueDate: Date | string;
   description: string;
