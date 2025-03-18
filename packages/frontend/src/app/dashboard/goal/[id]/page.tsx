@@ -51,6 +51,7 @@ const GoalDetailsPage = () => {
     queryFn: async () => {
       return (await api.get<Goal>(`goals/${id}`)).data;
     },
+
     throwOnError: true,
   });
 
@@ -83,7 +84,7 @@ const GoalDetailsPage = () => {
               <div className="flex items-center gap-4">
                 <Link
                   href="/dashboard"
-                  className="hover:bg-gray-100 p-2 rounded-full transition-colors"
+                  className="hover:bg-gray-100 dark:hover:bg-foreground-100 p-2 rounded-full transition-colors"
                   aria-label="Go back to dashboard"
                 >
                   <ChevronLeft size={20} />
@@ -220,7 +221,7 @@ const GoalDetailsPage = () => {
             <CardBody>
               <AnimatePresence mode="popLayout">
                 <div className="overflow-y-auto h-[30rem] flex flex-col gap-4">
-                  {subtasks?.data.length === 0 && (
+                  {subtasks?.data?.length === 0 && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -241,6 +242,7 @@ const GoalDetailsPage = () => {
                           <Button
                             // onPress={() => setShowAddDialog(true)}
                             className="mt-4 bg-black text-white"
+                            onPress={() => setShowAddTaskModal(true)}
                           >
                             <Plus className="w-4 h-4 mr-2" />
                             Add Your First Task
@@ -250,7 +252,7 @@ const GoalDetailsPage = () => {
                     </motion.div>
                   )}
 
-                  {subtasks?.data.map((task) => (
+                  {subtasks?.data?.map((task) => (
                     <SubtaskOverviewCard key={task.id} {...task} />
                   ))}
                   {SubtasksLoading && <SubtaskOverviewCardSkeleton />}
