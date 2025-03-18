@@ -20,7 +20,7 @@ interface FilterParams {
  * Zustand store for managing filter states in the application.
  * Provides functions to update and reset filters.
  */
-const useFilter = create<FilterParams>((set) => ({
+const useGoalFilter = create<FilterParams>((set) => ({
   status: null,
   sortBy: null,
   search: null,
@@ -38,7 +38,7 @@ const useFilter = create<FilterParams>((set) => ({
  */
 export const useInitializeFilterFromURL = () => {
   const params = useSearchParams();
-  const { setStatus, setSortBy, setSearch, setOrder } = useFilter();
+  const { setStatus, setSortBy, setSearch, setOrder } = useGoalFilter();
 
   useEffect(() => {
     const statusParam = params.get("status");
@@ -53,4 +53,4 @@ export const useInitializeFilterFromURL = () => {
   }, [params]);
 };
 
-export default useFilter;
+export default useGoalFilter;

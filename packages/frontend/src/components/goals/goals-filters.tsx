@@ -17,7 +17,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { ChangeEvent, useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import Badge from "../ui/badge";
-import useFilter, { useInitializeFilterFromURL } from "@/stores/useFilter";
+import useGoalFilter, {
+  useInitializeFilterFromURL,
+} from "@/stores/useGoalFilter";
 import { AnimatePresence, motion } from "framer-motion";
 import { Card } from "../ui/card";
 
@@ -83,7 +85,7 @@ export function GoalsFilters() {
     setSearch,
     order,
     setOrder,
-  } = useFilter();
+  } = useGoalFilter();
 
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
