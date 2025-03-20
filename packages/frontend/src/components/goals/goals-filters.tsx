@@ -24,87 +24,106 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Card } from "../ui/card";
 
 /**
- * Component for filtering and sorting goals.
+ * Component for filtering and sorting goals or subtasks.
  *
- * This component provides a search input for filtering goals by title,
- * and a dropdown menu for filtering by status and sorting by different criteria.
+ * This component provides:
+ * - A debounced search input for filtering goals/subtasks by title.
+ * - A dropdown menu to filter by status and sort by various criteria.
+ * - Visual badges representing active filters with options to remove individual filters or clear all at once.
+ *
+ * URL query parameters are updated in real-time to reflect the current filters:
+ * - "title" for the search query.
+ * - "status" for the status filter.
+ * - "sortBy" for the selected sort key.
+ * - "order" for the sort order.
+ * - "page" is reset to "1" when filters change.
  *
  * @component
  * @example
- * return (
- *   <GoalsFilters />
- * )
+ * // Example usage:
+ * <Filters
+ *   status={currentStatus}
+ *   setStatus={setCurrentStatus}
+ *   sortBy={currentSortBy}
+ *   setSortBy={setCurrentSortBy}
+ *   search={currentSearch}
+ *   setSearch={setCurrentSearch}
+ *   order={currentOrder}
+ *   setOrder={setCurrentOrder}
+ *   type="goal" // or "subtask"
+ * />
  *
- * @returns {JSX.Element} The rendered component.
+ * @param {FilterParams} props - The filter parameters and state setters.
+ * @param {Goal["status"] | Subtask["status"] | null} props.status - Current status filter.
+ * @param {function} props.setStatus - Setter function for the status filter.
+ * @param {URLParams["sortBy"] | null} props.sortBy - Current sort key.
+ * @param {function} props.setSortBy - Setter function for the sort key.
+ * @param {string | null} props.search - Current search text.
+ * @param {function} props.setSearch - Setter function for the search text.
+ * @param {URLParams["order"]} props.order - Current sort order ("asc" or "desc").
+ * @param {function} props.setOrder - Setter function for the sort order.
+ * @param {"goal" | "subtask"} props.type - Type of item to filter (goal or subtask).
  *
- * @function
- * @name GoalsFilters
+ * @returns {JSX.Element} The rendered Filters component.
  *
- * @description
- * - Uses a debounced search input to filter goals by title.
- * - Updates the URL query parameters based on the search input.
- * - Provides a dropdown menu for filtering goals by status (all, active, completed, cancelled).
- * - Provides a dropdown menu for sorting goals by due date, progress, or title.
- * - Displays active filters as badges with the ability to clear them individually or all at once.
- *
- * @hook
- * @name useDebounce
- * @description Debounces the search input to avoid excessive updates.
- *
- * @hook
- * @name useEffect
- * @description Updates the URL query parameters when the debounced search input changes.
- *
- * @param {ChangeEvent<HTMLInputElement>} e - The change event for the search input.
- *
- * @callback handleSearch
- * @description Handles the search input change event and updates the search state.
- *
- * @callback handleSort
- * @description Handles sorting goals by the specified key.
- * @param {"title" | "dueDate" | "progress"} key - The key to sort goals by.
- *
- * @callback handleStatusFilter
- * @description Handles filtering goals by the specified status.
- * @param {Goal["status"] | "all"} status - The status to filter goals by.
- *
- * @callback handleClear
- * @description Clears all filters and resets the URL query parameters.
+ * @remarks
+ * - Utilizes the useDebounce hook to prevent excessive updates from the search input.
+ * - Uses the Next.js router and pathname hooks to update the URL query parameters.
+ * - Relies on a custom store (useGoalFilter) for managing filter state and URL initialization.
  */
-export function GoalsFilters() {
+export function Filters({
+  status,
+  setStatus,
+  sortBy,
+  setSortBy,
+  search,
+  setSearch,
+  order,
+  setOrder,
+  type,
+}: FilterParams) {
   const params = new URLSearchParams(window.location.search);
   const router = useRouter();
   const pathname = usePathname();
 
-  const {
-    status,
-    setStatus,
-    sortBy,
-    setSortBy,
-    search,
-    setSearch,
-    order,
-    setOrder,
-  } = useGoalFilter();
-
+  /**
+   * Handles search input changes.
+   *
+   * Updates the search state with the current input value.
+   *
+   * @param {ChangeEvent<HTMLInputElement>} e - The input change event.
+   */
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
   };
+
+  // Debounce the search input to limit updates (500ms delay)
   const [debouncedSearch] = useDebounce(search, 500);
 
+  // Boolean indicating if any filter (status or sortBy) is active
   const isFilter = status || sortBy;
 
+  // Initialize filter state from URL parameters when component mounts
   useInitializeFilterFromURL();
 
+  // Update URL query parameters when the debounced search input changes.
   useEffect(() => {
     if (debouncedSearch) {
       params.set("title", debouncedSearch);
       setSearch(debouncedSearch);
-      params.set("page", "1"); // Reset page in URL
+      params.set("page", "1"); // Reset page in URL when search changes
     }
     router.replace(`${pathname}?${params.toString()}`);
   }, [debouncedSearch]);
 
+  /**
+   * Handles sorting based on a given key and order.
+   *
+   * Updates the URL parameters and state with the selected sort key and order.
+   *
+   * @param {URLParams["sortBy"]} sortBy - The key to sort by (e.g., "title", "dueDate", "progress").
+   * @param {URLParams["order"]} order - The order of sorting ("asc" or "desc").
+   */
   const handleSort = (
     sortBy: URLParams["sortBy"],
     order: URLParams["order"]
@@ -112,7 +131,7 @@ export function GoalsFilters() {
     if (sortBy) {
       params.set("sortBy", sortBy);
       setSortBy(sortBy);
-      params.set("page", "1"); // Reset page in URL
+      params.set("page", "1"); // Reset page when sorting changes
     } else {
       params.delete("sortBy");
     }
@@ -121,18 +140,31 @@ export function GoalsFilters() {
     router.push(`${pathname}?${params.toString()}`);
   };
 
-  const handleStatusFilter = (status: Goal["status"]) => {
+  /**
+   * Handles filtering by status.
+   *
+   * Sets the "status" URL parameter and updates the state for the status filter.
+   *
+   * @param {Goal["status"] | Subtask["status"]} status - The status to filter by.
+   */
+  const handleStatusFilter = (status: Subtask["status"] | Goal["status"]) => {
     if (status) {
       params.set("status", status);
       setStatus(status);
-      params.set("page", "1"); // Reset page in URL
+      params.set("page", "1"); // Reset page when filtering changes
     } else {
       params.delete("status");
     }
-
     router.push(`${pathname}?${params.toString()}`);
   };
 
+  /**
+   * Handles removal of a specific filter.
+   *
+   * Removes the corresponding URL parameter and resets the associated state.
+   *
+   * @param {string} key - The key of the filter to remove (e.g., "status", "sortBy", "title").
+   */
   const handleRemove = (key: string) => {
     params.delete(key);
     if (key === "status") {
@@ -144,14 +176,21 @@ export function GoalsFilters() {
     }
     router.push(`${pathname}?${params.toString()}`);
   };
+
+  /**
+   * Clears all filters by resetting the URL query parameters.
+   */
   const handleClear = () => {
     router.replace(`${pathname}`);
   };
+
+  // Remove the "title" parameter if search input becomes empty.
   useEffect(() => {
     if (search === "") {
       handleRemove("title");
     }
   }, [search]);
+
   return (
     <div className="flex gap-2 items-center">
       {/* Display active filters as badges */}
@@ -168,14 +207,14 @@ export function GoalsFilters() {
           filterValue={status}
           onRemove={() => handleRemove("status")}
         />
-        {/* Clear all filters button */}
+        {/* Button to clear all active filters */}
         {isFilter && (
           <motion.div
             key="clear"
-            initial={{ opacity: 0, y: 2 }} // Initial state when the badge is added
-            animate={{ opacity: 1, y: 0 }} // Animate to this state when the badge is rendered
-            exit={{ opacity: 0, y: 2 }} // Animate to this state when the badge is removed
-            transition={{ duration: 0.2 }} // Transition duration
+            initial={{ opacity: 0, y: 2 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 2 }}
+            transition={{ duration: 0.2 }}
           >
             <Button className="capitalize" onClick={() => handleClear()}>
               Clear
@@ -184,7 +223,7 @@ export function GoalsFilters() {
         )}
       </AnimatePresence>
 
-      {/* Search input with debounced functionality */}
+      {/* Search input field with icon and clear button */}
       <div className="relative flex-1 max-w-sm">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
@@ -201,7 +240,7 @@ export function GoalsFilters() {
         )}
       </div>
 
-      {/* Dropdown menu for filtering and sorting */}
+      {/* Dropdown menu for filtering and sorting options */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="gap-2">
@@ -211,22 +250,35 @@ export function GoalsFilters() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          {/* Filter by status section */}
+          {/* Section for filtering by status */}
           <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => handleStatusFilter("active")}>
-            Active
-          </DropdownMenuItem>
+          {type === "subtask" ? (
+            <DropdownMenuItem onClick={() => handleStatusFilter("in-progress")}>
+              in-progress
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onClick={() => handleStatusFilter("active")}>
+              Active
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => handleStatusFilter("completed")}>
             Completed
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleStatusFilter("cancelled")}>
-            Cancelled
-          </DropdownMenuItem>
+          {type === "goal" && (
+            <DropdownMenuItem onClick={() => handleStatusFilter("cancelled")}>
+              Cancelled
+            </DropdownMenuItem>
+          )}
+          {type === "subtask" && (
+            <DropdownMenuItem onClick={() => handleStatusFilter("pending")}>
+              pending
+            </DropdownMenuItem>
+          )}
 
           <DropdownMenuSeparator />
 
-          {/* Sort by section */}
+          {/* Section for sorting options */}
           <DropdownMenuLabel>Sort by</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => handleSort("dueDate", order)}>
@@ -241,7 +293,7 @@ export function GoalsFilters() {
 
           <DropdownMenuSeparator />
 
-          {/* Sort */}
+          {/* Section for choosing sort order */}
           <DropdownMenuLabel>Sort Order</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuRadioGroup value={order}>
@@ -264,6 +316,17 @@ export function GoalsFilters() {
   );
 }
 
+/**
+ * Component to display a message when no search results match the filters.
+ *
+ * Uses a motion animation for smooth appearance.
+ *
+ * @component
+ * @example
+ * <NoSearchResults />
+ *
+ * @returns {JSX.Element} The rendered NoSearchResults component.
+ */
 export const NoSearchResults = () => {
   return (
     <motion.div
