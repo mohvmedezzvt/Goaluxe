@@ -69,4 +69,16 @@ type LoginResponse = {
   user: User;
 };
 
+interface FilterParams {
+  status: URLParams["status"]; // The status filter (e.g., "active", "completed").
+  setStatus: (value: URLParams["status"]) => void; // Function to update the status filter.
+  sortBy: URLParams["sortBy"]; // The sorting criteria (e.g., "date", "priority").
+  setSortBy: (value: URLParams["sortBy"]) => void; // Function to update the sorting criteria.
+  search: URLParams["title"]; // The search query string.
+  setSearch: (value: URLParams["title"]) => void; // Function to update the search query.
+  order: URLParams["order"]; // The sorting order ("asc" or "desc").
+  setOrder: (value: URLParams["order"]) => void; // Function to update the sorting order.
+  type?: "subtask" | "goal";
+}
+
 type RegisterResponse = LoginResponse;
