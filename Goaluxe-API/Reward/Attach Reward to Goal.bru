@@ -1,0 +1,20 @@
+meta {
+  name: Attach Reward to Goal
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://localhost:3001/api/rewards/:rewardId/goals/:goalId
+  body: none
+  auth: none
+}
+
+params:path {
+  goalId: 67b39ef353a937cd559ca5ee
+  rewardId: 67dc821b3cd9cdc033d1e921
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}

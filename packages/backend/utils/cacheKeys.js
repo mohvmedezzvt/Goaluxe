@@ -62,4 +62,12 @@ export const CacheKeys = {
         .join('&')
     );
   },
+
+  REWARD: (id) => `reward:${id}`,
+  REWARDS: (userId, query = {}) => {
+    const queryStr = Object.entries(query)
+      .map(([key, value]) => `${key}:${value}`)
+      .join('_');
+    return `rewards:${userId}:${queryStr || 'default'}`;
+  },
 };

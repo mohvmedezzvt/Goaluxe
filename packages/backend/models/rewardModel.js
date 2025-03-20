@@ -1,67 +1,57 @@
 import mongoose from 'mongoose';
-
 const { Schema } = mongoose;
 
-/**
- * Reward Schema
- * Represents a reward that can be either public (predefined) or custom (created by a user).
- */
 const rewardSchema = new Schema(
   {
-    // Specifies the type of reward.
-    type: {
+    name: {
       type: String,
       required: true,
-      enum: [
-        'points',
-        'voucher',
-        'badge',
-        'discount',
-        'experience',
-        'physical_item',
-      ],
+      trim: true,
     },
-    // A numeric value representing the reward (e.g., 100 points, 20% discount).
-    value: {
-      type: Number,
-      required: function () {
-        return ['points', 'discount', 'experience'].includes(this.type);
-      },
-    },
-    // Detailed description of the reward.
     description: {
       type: String,
+      trim: true,
       default: '',
     },
-    // Optional expiry date for the reward.
-    expiryDate: {
-      type: Date,
-      default: null,
-    },
-    // URL for redeeming the reward (for example, an online voucher page).
-    redeemUrl: {
+    icon: {
       type: String,
-      default: '',
+      required: true,
     },
-    // URL to an image that represents the reward.
-    imageUrl: {
+    iconColor: {
       type: String,
-      default: '',
+      default: '#000000',
     },
-    // Category of the reward (e.g., "health", "entertainment").
-    category: {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    goals: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Goal',
+    }],
+    status: {
       type: String,
-      default: '',
+      enum: ['available', 'claimed'],
+      default: 'available',
     },
-    // Indicates whether this reward is public (predefined) or private (custom-created).
-    public: {
+    type: {
+      type: String,
+      enum: ['personal', 'purchase', 'activity'],
+      default: 'personal',
+    },
+    // Settings and preferences
+    autoClaimEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    notificationsEnabled: {
       type: Boolean,
       default: true,
     },
-    // For custom rewards, the user who created it. Public rewards will have this set to null.
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
+    // Timestamp for when the reward was claimed
+    claimedAt: {
+      type: Date,
       default: null,
     },
   },
@@ -75,12 +65,14 @@ rewardSchema.set('toJSON', {
   transform: (doc, ret) => {
     ret.id = ret._id; // add a new 'id' field with the value of '_id'
     delete ret._id; // remove the '_id' field
-    delete ret.__v; // optionally remove the __v field
+    delete ret.__v; // remove the __v field
     return ret;
   },
 });
 
-rewardSchema.index({ public: 1 });
-rewardSchema.index({ createdBy: 1 });
+// Indexes for performance
+rewardSchema.index({ user: 1 });
+rewardSchema.index({ status: 1 });
+rewardSchema.index({ 'goals': 1 });
 
 export default mongoose.model('Reward', rewardSchema);
