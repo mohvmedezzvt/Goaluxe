@@ -1,135 +1,307 @@
 import Reward from '../models/rewardModel.js';
+import Goal from '../models/goalModel.js';
+import redis from '../config/redis.js';
+import { CacheKeys } from '../utils/cacheKeys.js';
 
 /**
- * Retrieves all rewards that are public or that were created by the given user.
- *
- * @param {string} userId - The ID of the user.
- * @returns {Promise<Array>} - An array of Reward documents.
+ * Creates a new reward.
+ * @param {Object} data - The reward data.
+ * @returns {Promise<Object>} - The newly created reward.
  */
-export const getRewardOptions = async (userId) => {
-  // Retrieve rewards that are either public or created by the user.
-  const rewards = await Reward.find({
-    $or: [{ public: true }, { createdBy: userId }],
-  });
-  return rewards;
+export const createReward = async (data) => {
+  return await Reward.create(data);
 };
 
 /**
- * Creates a custom reward for the specified user.
- * This reward is marked as private (public: false) and is associated with the user.
+ * Get all rewards for a specific user with pagination, filtering, and sorting.
  *
  * @param {string} userId - The ID of the user.
- * @param {Object} rewardData - An object containing the reward details.
- *   Expected fields include:
- *     - type: String (required, e.g., "points", "voucher", etc.)
- *     - value: Number (required for numeric reward types)
- *     - description: String (optional)
- *     - expiryDate: Date (optional)
- *     - redeemUrl: String (optional)
- *     - imageUrl: String (optional)
- *     - category: String (optional)
- * @returns {Promise<Object>} - The newly created Reward document.
- * @throws {Error} - Throws an error if required fields are missing.
+ * @param {Object} query - Query parameters for filtering, pagination, and sorting.
+ * @returns {Promise<Object>} - Paginated rewards data.
  */
-export const createCustomReward = async (
-  userId,
-  rewardData,
-  userRole = 'user'
-) => {
-  // Validate that rewardData includes a reward type.
-  if (!rewardData.type) {
-    throw new Error('Reward type is required');
+export const getRewards = async (userId, query = {}) => {
+  const page = parseInt(query.page, 10) || 1;
+  const maxLimit = 50;
+  const limit = Math.min(parseInt(query.limit, 10) || 10, maxLimit);
+  const skip = (page - 1) * limit;
+
+  const filter = { user: userId };
+
+  // Apply filters
+  if (query.status) filter.status = query.status;
+  if (query.type) filter.type = query.type;
+  if (query.name) filter.name = { $regex: query.name, $options: 'i' };
+  if (query.goalId) filter.goals = { $in: [query.goalId] };
+
+  // Count total documents matching the filter
+  const total = await Reward.countDocuments(filter);
+
+  // Define sort order
+  const sort =
+    query.sortBy && ['createdAt', 'name', 'status'].includes(query.sortBy)
+      ? {
+          [query.sortBy]:
+            query.order && query.order.toLowerCase() === 'desc' ? -1 : 1,
+        }
+      : { createdAt: -1 };
+
+  // Get paginated rewards
+  const rewards = await Reward.find(filter).sort(sort).skip(skip).limit(limit);
+
+  const result = {
+    data: rewards,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+
+  // Cache the result
+  try {
+    const cacheKey = CacheKeys.REWARDS(userId, query);
+    await redis.set(cacheKey, result, 600); // TTL: 10 minutes
+    await redis.trackKey(userId, cacheKey);
+  } catch (error) {
+    console.error('Cache write error:', error);
   }
 
-  // If the user is not an admin, ignore any provided `public` field and force it to false.
-  if (userRole !== 'admin') {
-    rewardData.public = false;
-  } else {
-    // For admin users, if the `public` field is not provided, default it to true.
-    if (typeof rewardData.public == 'undefined') {
-      rewardData.public = true;
-    }
-  }
+  return result;
+};
 
-  rewardData.createdBy = userId;
-
-  const newReward = await Reward.create(rewardData);
-  return newReward;
+/**
+ * Get a specific reward by ID.
+ *
+ * @param {string} id - The reward ID.
+ * @returns {Promise<Object|null>} - The reward or null if not found.
+ */
+export const getRewardById = async (id) => {
+  return await Reward.findById(id).populate('goals');
 };
 
 /**
  * Updates a reward.
- * For public rewards, only admins are allowed to update.
- * For custom (private) rewards, only the creator can update.
  *
- * @param {string} rewardId - The ID of the reward to update.
- * @param {Object} updateData - The fields to update.
- * @param {string} userId - The ID of the authenticated user.
- * @param {string} userRole - The role of the authenticated user.
- * @returns {Promise<Object>} - The updated Reward document.
- * @throws {Error} - Throws an error if the reward is not found or if the user is not authorized.
+ * @param {string} id - The reward ID.
+ * @param {Object} updateData - The data to update.
+ * @returns {Promise<Object|null>} - The updated reward or null if not found.
  */
-export const updateReward = async (rewardId, updateData, userId, userRole) => {
-  const reward = await Reward.findById(rewardId);
-  if (!reward) {
-    throw new Error('Reward not found');
-  }
+export const updateReward = async (id, updateData) => {
+  const reward = await Reward.findByIdAndUpdate(id, updateData, { new: true });
 
-  // Check ownership:
-  if (reward.public) {
-    // Only admins can update public rewards.
-    if (userRole !== 'admin') {
-      throw new Error('Forbidden: Cannot update public reward');
+  if (reward) {
+    try {
+      await Promise.all([
+        redis.invalidateUser(reward.user.toString()),
+        redis.del(CacheKeys.REWARD(id)),
+        // If goals array changed, invalidate associated goal caches
+        ...(updateData.goals
+          ? updateData.goals.map((goalId) => redis.del(CacheKeys.GOAL(goalId)))
+          : []),
+      ]);
+    } catch (error) {
+      console.error('Cache cleanup failed:', error);
     }
-  } else {
-    // For custom rewards, only the creator may update.
-    if (reward.createdBy.toString() !== userId) {
-      throw new Error('Forbidden: You can only update your own rewards');
-    }
   }
 
-  // Prevent changes to the creator field.
-  delete updateData.createdBy;
-
-  const updatedReward = await Reward.findByIdAndUpdate(rewardId, updateData, {
-    new: true,
-    runValidators: true,
-  });
-  if (!updatedReward) {
-    throw new Error('Reward not found');
-  }
-  return updatedReward;
+  return reward;
 };
 
 /**
  * Deletes a reward.
- * For public rewards, only admins are allowed to delete.
- * For custom rewards, only the creator can delete.
  *
- * @param {string} rewardId - The ID of the reward to delete.
- * @param {string} userId - The ID of the authenticated user.
- * @param {string} userRole - The role of the authenticated user.
- * @returns {Promise<void>}
- * @throws {Error} - Throws an error if the reward is not found or if the user is not authorized.
+ * @param {string} id - The reward ID.
+ * @returns {Promise<boolean>} - True if deleted, false otherwise.
  */
-export const deleteReward = async (rewardId, userId, userRole) => {
+export const deleteReward = async (id) => {
+  const reward = await Reward.findById(id);
+  if (!reward) return false;
+
+  // Store user ID and goals for cache invalidation
+  const userId = reward.user;
+  const goalIds = reward.goals || [];
+
+  // Remove reward reference from associated goals
+  await Goal.updateMany({ _id: { $in: goalIds } }, { $set: { reward: null } });
+
+  // Delete the reward
+  await Reward.findByIdAndDelete(id);
+
+  // Invalidate caches
+  try {
+    await Promise.all([
+      redis.invalidateUser(userId.toString()),
+      redis.del(CacheKeys.REWARD(id)),
+      ...goalIds.map((goalId) => redis.del(CacheKeys.GOAL(goalId))),
+    ]);
+  } catch (error) {
+    console.error('Cache cleanup failed:', error);
+  }
+
+  return true;
+};
+
+/**
+ * Attaches a reward to a goal.
+ *
+ * @param {string} rewardId - The reward ID.
+ * @param {string} goalId - The goal ID.
+ * @returns {Promise<Object>} - The updated reward.
+ */
+export const attachRewardToGoal = async (rewardId, goalId) => {
   const reward = await Reward.findById(rewardId);
-  if (!reward) {
-    throw new Error('Reward not found');
+  if (!reward) throw new Error('Reward not found');
+
+  const goal = await Goal.findById(goalId);
+  if (!goal) throw new Error('Goal not found');
+
+  // Check if user owns both the reward and the goal
+  if (reward.user.toString() !== goal.user.toString()) {
+    throw new Error('User does not own both the reward and the goal');
   }
 
-  // Check ownership:
-  if (reward.public) {
-    // Only admins can delete public rewards.
-    if (userRole !== 'admin') {
-      throw new Error('Forbidden: Cannot delete public reward');
-    }
-  } else {
-    // For custom rewards, only the creator may delete.
-    if (reward.createdBy.toString() !== userId) {
-      throw new Error('Forbidden: You can only delete your own rewards');
-    }
+  // Add goal to reward if not already attached
+  if (!reward.goals.includes(goalId)) {
+    reward.goals.push(goalId);
+    await reward.save();
   }
 
-  await Reward.findByIdAndDelete(rewardId);
+  // Update goal to reference this reward
+  await Goal.findByIdAndUpdate(goalId, { reward: rewardId });
+
+  // Invalidate caches
+  try {
+    await Promise.all([
+      redis.invalidateUser(reward.user.toString()),
+      redis.del(CacheKeys.REWARD(rewardId)),
+      redis.del(CacheKeys.GOAL(goalId)),
+    ]);
+  } catch (error) {
+    console.error('Cache cleanup failed:', error);
+  }
+
+  return reward;
+};
+
+/**
+ * Detaches a reward from a goal.
+ *
+ * @param {string} rewardId - The reward ID.
+ * @param {string} goalId - The goal ID.
+ * @returns {Promise<Object>} - The updated reward.
+ */
+export const detachRewardFromGoal = async (rewardId, goalId) => {
+  const reward = await Reward.findById(rewardId);
+  if (!reward) throw new Error('Reward not found');
+
+  // Remove goal from reward's goals array
+  reward.goals = reward.goals.filter((id) => id.toString() !== goalId);
+  await reward.save();
+
+  // Remove reward reference from the goal
+  await Goal.findByIdAndUpdate(goalId, { reward: null });
+
+  // Invalidate caches
+  try {
+    await Promise.all([
+      redis.invalidateUser(reward.user.toString()),
+      redis.del(CacheKeys.REWARD(rewardId)),
+      redis.del(CacheKeys.GOAL(goalId)),
+    ]);
+  } catch (error) {
+    console.error('Cache cleanup failed:', error);
+  }
+
+  return reward;
+};
+
+/**
+ * Claims a reward if all attached goals are completed.
+ *
+ * @param {string} rewardId - The reward ID.
+ * @returns {Promise<Object>} - The updated reward with claim status.
+ */
+export const claimReward = async (rewardId) => {
+  const reward = await Reward.findById(rewardId).populate('goals');
+  if (!reward) throw new Error('Reward not found');
+
+  if (reward.status === 'claimed') {
+    throw new Error('Reward has already been claimed');
+  }
+
+  // If no goals are attached, allow claiming
+  if (!reward.goals.length) {
+    reward.status = 'claimed';
+    reward.claimedAt = new Date();
+    await reward.save();
+    return reward;
+  }
+
+  // Check if all attached goals are completed
+  const allGoalsCompleted = reward.goals.every(
+    (goal) => goal.status === 'completed'
+  );
+
+  if (!allGoalsCompleted) {
+    throw new Error('Cannot claim reward: not all goals are completed');
+  }
+
+  // Update reward as claimed
+  reward.status = 'claimed';
+  reward.claimedAt = new Date();
+  await reward.save();
+
+  // Invalidate caches
+  try {
+    await Promise.all([
+      redis.invalidateUser(reward.user.toString()),
+      redis.del(CacheKeys.REWARD(rewardId)),
+      ...reward.goals.map((goal) => redis.del(CacheKeys.GOAL(goal._id))),
+    ]);
+  } catch (error) {
+    console.error('Cache cleanup failed:', error);
+  }
+
+  return reward;
+};
+
+/**
+ * Checks if a reward can be claimed (all attached goals are completed).
+ *
+ * @param {string} rewardId - The reward ID.
+ * @returns {Promise<Object>} - Object containing claimable status and reason.
+ */
+export const checkRewardClaimable = async (rewardId) => {
+  const reward = await Reward.findById(rewardId).populate('goals');
+  if (!reward) throw new Error('Reward not found');
+
+  if (reward.status === 'claimed') {
+    return {
+      claimable: false,
+      reason: 'Reward has already been claimed',
+    };
+  }
+
+  // If no goals are attached, reward is claimable
+  if (!reward.goals.length) {
+    return { claimable: true };
+  }
+
+  // Check if all attached goals are completed
+  const allGoalsCompleted = reward.goals.every(
+    (goal) => goal.status === 'completed'
+  );
+
+  if (!allGoalsCompleted) {
+    const incompleteGoals = reward.goals
+      .filter((goal) => goal.status !== 'completed')
+      .map((goal) => goal.title);
+
+    return {
+      claimable: false,
+      reason: 'Not all goals are completed',
+      incompleteGoals,
+    };
+  }
+
+  return { claimable: true };
 };
