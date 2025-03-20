@@ -1,24 +1,26 @@
-// routes/rewardRoutes.js
 import express from 'express';
 import * as rewardController from '../controllers/rewardController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
-import { checkBlacklist } from '../middleware/checkBlacklist.js';
 
 const router = express.Router();
 
+// Apply authentication to all reward routes
 router.use(authMiddleware);
-router.use(checkBlacklist);
 
-// GET: Retrieve all available reward options (public rewards plus those created by the user)
-router.get('/', rewardController.listRewardOptions);
-
-// POST: Create a custom reward for the authenticated user
+// Basic CRUD operations
 router.post('/', rewardController.createReward);
-
-// PUT: Update an existing reward by its ID
+router.get('/', rewardController.getRewards);
+router.get('/:id', rewardController.getRewardById);
 router.put('/:id', rewardController.updateReward);
-
-// DELETE: Delete a reward by its ID
 router.delete('/:id', rewardController.deleteReward);
+
+// Specialized reward operations
+router.post('/:rewardId/goals/:goalId', rewardController.attachRewardToGoal);
+router.delete(
+  '/:rewardId/goals/:goalId',
+  rewardController.detachRewardFromGoal
+);
+router.post('/:id/claim', rewardController.claimReward);
+router.get('/:id/claimable', rewardController.checkRewardClaimable);
 
 export default router;
