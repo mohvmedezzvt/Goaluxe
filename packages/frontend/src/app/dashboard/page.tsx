@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useSearchParamsHook } from "@/hooks/use-search-params";
-import { useGoalsQuery } from "@/hooks/use-goals-query";
+import { useSearchParams } from "@/hooks/use-search-params";
+import { useFetchQuery } from "@/hooks/use-fetch-query";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -20,10 +20,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { AddGoalModal } from "@/components/modals/add-goal-modal";
-import {
-  GoalsFilters,
-  NoSearchResults,
-} from "@/components/goals/goals-filters";
+import { Filters, NoSearchResults } from "@/components/goals/goals-filters";
 import GoalOverviewCard from "@/components/goals/goal-overview-card";
 import {
   QuickStatusCardSkeleton,
@@ -31,6 +28,7 @@ import {
   UpcomingDeadline,
 } from "@/components/skeleton/quick-status";
 import { OverviewGoalCardSkeleton } from "@/components/skeleton/overview-goal-card";
+import useGoalFilter from "@/stores/useGoalFilter";
 
 /**
  * DashboardPage Component
@@ -70,8 +68,14 @@ export default function DashboardPage() {
   const [showAddDialog, setShowAddDialog] = useState(false); // State for controlling the Add Goal dialog
 
   // Extract query parameters for filtering and pagination
-  const { title, page, status, sortBy, order, handlePagination } =
-    useSearchParamsHook();
+  const {
+    title,
+    page,
+    status: statusParam,
+    sortBy: sortByParam,
+    order: orderParam,
+    handlePagination,
+  } = useSearchParams();
 
   // Fetch goals analytics using `react-query`
   const { data: analytics, isPending: loadingAnalytics } = useQuery({
@@ -81,13 +85,28 @@ export default function DashboardPage() {
     },
   });
 
-  // Fetch goals using `react-query`
-  const { data: Goals, isPending: loadingGoals } = useGoalsQuery({
-    title,
-    page,
+  const {
     status,
+    setStatus,
     sortBy,
+    setSortBy,
+    search,
+    setSearch,
     order,
+    setOrder,
+  } = useGoalFilter();
+
+  // Fetch goals using `react-query`
+  const { data: Goals, isPending: loadingGoals } = useFetchQuery<Goal[]>({
+    endpoint: "/goals",
+    params: {
+      title: title ?? undefined,
+      page: page ?? undefined,
+      status: statusParam ?? undefined,
+      sortBy: sortByParam ?? undefined,
+      order: orderParam ?? undefined,
+    },
+    queryKey: ["Goals", title, page, statusParam, sortByParam, orderParam],
   });
 
   // Extract goals data from the response
@@ -197,7 +216,17 @@ export default function DashboardPage() {
           <CardHeader className="space-y-4 sm:space-y-0">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
               <h3 className="font-bold text-xl">Goals</h3>
-              <GoalsFilters />
+              <Filters
+                status={status}
+                search={search}
+                setOrder={setOrder}
+                setSearch={setSearch}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                setStatus={setStatus}
+                order={order}
+                type="goal"
+              />
             </div>
           </CardHeader>
           <CardBody>
