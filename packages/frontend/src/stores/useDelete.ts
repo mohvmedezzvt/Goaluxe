@@ -1,12 +1,19 @@
 import { create } from "zustand";
 interface DeleteState {
-  isDeleting: string | null;
-  setDelete: (value: string | null) => void;
+  isDeleting: Record<string, string | null>;
+  setDelete: (category: string, id: string | null) => void;
 }
 
 const useDelete = create<DeleteState>((set) => ({
-  isDeleting: null,
-  setDelete: (value) => set({ isDeleting: value }),
+  isDeleting: {},
+  setDelete: (category, id) => {
+    set((state) => ({
+      isDeleting: {
+        ...state.isDeleting,
+        [category]: id,
+      },
+    }));
+  },
 }));
 
 export default useDelete;
