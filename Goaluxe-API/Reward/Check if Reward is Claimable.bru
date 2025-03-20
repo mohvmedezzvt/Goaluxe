@@ -1,0 +1,19 @@
+meta {
+  name: Check if Reward is Claimable
+  type: http
+  seq: 8
+}
+
+get {
+  url: http://localhost:3001/api/rewards/:rewardId/claimable
+  body: none
+  auth: none
+}
+
+params:path {
+  rewardId: 67dc821b3cd9cdc033d1e921
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}

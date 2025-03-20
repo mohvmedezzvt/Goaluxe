@@ -1,7 +1,7 @@
 meta {
   name: Create a Reward
   type: http
-  seq: 2
+  seq: 3
 }
 
 post {
@@ -16,10 +16,13 @@ headers {
 
 body:json {
   {
-    "type": "points",
-    "value": 100,
-    "description": "Reward for completing a challenging goal",
-    "public": true   // This will be forced to false since the user is not admin.
+    "name": "Vacation Trip",
+    "description": "Reward myself with a weekend getaway",
+    "icon": "/home/moezz/Downloads/huggingface-icon.svg",
+    "iconColor": "#000000",
+    "type": "personal", /* ['personal', 'purchase', 'activity'] */
+    "status": "available", /* ['available', 'claimed'] */
+    "autoClaimEnabled": false,
+    "notificationsEnabled": true
   }
-  
 }

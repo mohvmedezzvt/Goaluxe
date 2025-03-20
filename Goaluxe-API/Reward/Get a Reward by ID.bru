@@ -1,12 +1,12 @@
 meta {
-  name: Update a Reward
+  name: Get a Reward by ID
   type: http
-  seq: 4
+  seq: 2
 }
 
-put {
+get {
   url: http://localhost:3001/api/rewards/:rewardId
-  body: json
+  body: none
   auth: none
 }
 
@@ -16,12 +16,4 @@ params:path {
 
 headers {
   Authorization: Bearer {{access_token}}
-}
-
-body:json {
-  {
-    "name": "Updated Reward Name",
-    "description": "New description",
-    "type": "activity"
-  }
 }
