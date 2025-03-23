@@ -34,7 +34,7 @@ import {
 import useDelete from "@/stores/useDelete";
 import useEdit from "@/stores/useEdit";
 import DeleteModal from "@/components/modals/delete-modal";
-import { EditGoalModal } from "@/components/modals/edit-goal-modal";
+import { EditGoalModal } from "@/components/modals/edit-modal";
 import limitCharacters from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import SubtaskOverviewCard from "@/components/goals/subtask-overview-card";
@@ -46,8 +46,8 @@ import { useSearchParams } from "@/hooks/use-search-params";
 
 const GoalDetailsPage = () => {
   const { id } = useParams();
-  const { setEdit } = useEdit();
-  const { setDelete } = useDelete();
+  const { setEditGoal } = useEdit();
+  const { setDeleteGoal } = useDelete();
   const [isShowMore, setIsShowMore] = useState(false);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const { data: goal, isPending: dataLoading } = useQuery({
@@ -136,7 +136,8 @@ const GoalDetailsPage = () => {
               <Dropdown placement="left">
                 <DropdownTrigger className="w-fit !min-w-0 !h-auto">
                   <Button
-                    className="bg-white dark:bg-black hover:bg-default-200 !p-1 !min-w-0 rounded-full !w-fit transition-colors"
+                    isIconOnly
+                    className="bg-white dark:bg-black hover:bg-default-200 rounded-full transition-colors"
                     aria-label="More options"
                   >
                     <EllipsisVertical size={20} />
@@ -144,7 +145,10 @@ const GoalDetailsPage = () => {
                 </DropdownTrigger>
                 <DropdownMenu className="space-y-3">
                   {/* Edit Goal Option */}
-                  <DropdownItem key="edit" onPress={() => setEdit(String(id))}>
+                  <DropdownItem
+                    key="edit"
+                    onPress={() => setEditGoal(String(id))}
+                  >
                     <div className="flex text-foreground-800  items-center justify-between">
                       <p>Edit goal</p>
                       <Pencil size={17} />
@@ -156,7 +160,7 @@ const GoalDetailsPage = () => {
                     key="delete"
                     color="danger"
                     className="text-red-500"
-                    onPress={() => setDelete(String(id))}
+                    onPress={() => setDeleteGoal(String(id))}
                   >
                     <div className="flex items-center justify-between group">
                       <p>Delete goal</p>
