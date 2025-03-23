@@ -13,6 +13,13 @@ get {
 params:query {
   ~page: 1
   ~limit: 10
+  ~status: 'pending', 'in-progress', 'completed', 'all' for no filtering)
+  ~title: 
+  ~description: 
+  ~fromDueDate: 
+  ~toDueDate: 
+  ~sortBy: ('dueDate', 'title', 'status', 'createdAt')
+  ~order: 
 }
 
 params:path {
