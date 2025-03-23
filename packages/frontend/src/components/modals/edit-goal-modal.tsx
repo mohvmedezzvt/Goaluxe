@@ -42,7 +42,7 @@ import { format } from "date-fns";
  */
 export function EditGoalModal() {
   const queryClient = useQueryClient();
-  const { isEditing, setEdit } = useEdit();
+  const { isEditing, clearEdits } = useEdit();
 
   // State for form data and validation errors
   const [formData, setFormData] = useState<{
@@ -78,7 +78,7 @@ export function EditGoalModal() {
       queryClient.invalidateQueries({ queryKey: ["goal", isEditing] });
       queryClient.invalidateQueries({ queryKey: ["Goals"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      setEdit(null); // Close modal after successful update
+      clearEdits(); // Close modal after successful update
     },
   });
 
@@ -171,10 +171,16 @@ export function EditGoalModal() {
   );
 
   return (
-    <Modal backdrop="blur" isOpen={!!isEditing} onClose={() => setEdit(null)}>
+    <Modal
+      backdrop="blur"
+      isOpen={!!isEditing.goal || !!isEditing.subtask}
+      onClose={() => clearEdits()}
+    >
       <ModalContent className="text-foreground-800">
         <form onSubmit={handleSubmit}>
-          <ModalHeader>Edit Goal</ModalHeader>
+          <ModalHeader>
+            Edit {isEditing.goal?.goalId ? "Goal" : "Subtask"}
+          </ModalHeader>
           <ModalBody>
             <div className="space-y-4 py-4">
               {/* Title Input */}
@@ -273,7 +279,7 @@ export function EditGoalModal() {
             <Button
               type="button"
               className="border"
-              onPress={() => setEdit(null)}
+              onPress={() => clearEdits()}
               disabled={isPending}
             >
               Close
