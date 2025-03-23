@@ -21,7 +21,7 @@ export const CacheKeys = {
       `${CACHE_VERSION}:goals:user:${userId}:` +
       Object.entries(safeParams)
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([k, v]) => `${k}=${v}`)
+        .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
         .join('&')
     );
   },
@@ -34,7 +34,7 @@ export const CacheKeys = {
     `${CACHE_VERSION}:analytics:${type}:user:${userId}:` +
     Object.entries(params)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => `${k}=${v}`)
+      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
       .join('&'),
 
   // Dedicated key for dashboard analytics (no wildcards)
@@ -47,18 +47,25 @@ export const CacheKeys = {
 
   // Key for a user profile cache
   USER_PROFILE: (userId) => `${CACHE_VERSION}:user:${userId}:profile`,
-  // Key for subtasks of a specific goal with pagination parameters.
-  SUBTASKS: (goalId, params = {}) => {
+  // Key for subtasks of a specific goal with pagination, filtering, and sorting parameters.
+  SUBTASKS: (goalId, params) => {
     const safeParams = {
       page: params.page?.toString() || '1',
       limit: params.limit?.toString() || '10',
+      status: params.status || 'all',
+      title: params.title?.slice(0, 50) || '',
+      description: params.description?.slice(0, 50) || '',
+      from: params.fromDueDate || '',
+      to: params.toDueDate || '',
+      sort: params.sortBy || 'createdAt',
+      order: params.order || 'desc',
     };
 
     return (
       `${CACHE_VERSION}:subtasks:goal:${goalId}:` +
       Object.entries(safeParams)
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([k, v]) => `${k}=${v}`)
+        .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
         .join('&')
     );
   },
@@ -66,7 +73,7 @@ export const CacheKeys = {
   REWARD: (id) => `reward:${id}`,
   REWARDS: (userId, query = {}) => {
     const queryStr = Object.entries(query)
-      .map(([key, value]) => `${key}:${value}`)
+      .map(([key, value]) => `${key}:${encodeURIComponent(value)}`)
       .join('_');
     return `rewards:${userId}:${queryStr || 'default'}`;
   },

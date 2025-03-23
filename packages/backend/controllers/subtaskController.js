@@ -26,31 +26,41 @@ export const createSubtask = async (req, res, next) => {
 };
 
 /**
- * Retrieve paginated subtasks for a given goal.
+ * Retrieve filtered and paginated subtasks for a given goal.
  * @param {import('express').Request} req - Express request object.
  * @param {import('express').Response} res - Express response object.
  * @param {Function} next - Express next middleware function.
  */
-
 export const getSubtasks = async (req, res, next) => {
   try {
     const { goalId } = req.params;
-    const cacheKey = CacheKeys.SUBTASKS(goalId, {
+
+    // Create query object from request parameters
+    const query = {
       page: req.query.page,
       limit: req.query.limit,
-    });
+      status: req.query.status,
+      title: req.query.title,
+      description: req.query.description,
+      fromDueDate: req.query.fromDueDate,
+      toDueDate: req.query.toDueDate,
+      sortBy: req.query.sortBy,
+      order: req.query.order,
+    };
+
+    // Generate cache key based on all query parameters
+    const cacheKey = CacheKeys.SUBTASKS(goalId, query);
+
     const cached = await redis.get(cacheKey);
     res.locals.cacheHit = !!cached;
+
     if (cached) return res.status(200).json(cached);
 
-    const result = await subtaskService.getSubtasks(
-      goalId,
-      Number(req.query.page) || 1,
-      Number(req.query.limit) || 10
-    );
+    const result = await subtaskService.getSubtasks(goalId, query);
 
     await redis.set(cacheKey, result, 900); // TTL: 15 minutes
     await redis.trackKey(req.user.id, cacheKey);
+
     res.status(200).json(result);
   } catch (error) {
     next(error);
