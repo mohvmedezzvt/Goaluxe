@@ -39,6 +39,10 @@ import limitCharacters from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import SubtaskOverviewCard from "@/components/goals/subtask-overview-card";
 import AddTaskModal from "@/components/modals/add-task-modal";
+import { Filters } from "@/components/goals/goals-filters";
+import useGoalFilter from "@/stores/useGoalFilter";
+import { useFetchQuery } from "@/hooks/use-fetch-query";
+import { useSearchParams } from "@/hooks/use-search-params";
 
 const GoalDetailsPage = () => {
   const { id } = useParams();
@@ -55,24 +59,62 @@ const GoalDetailsPage = () => {
     throwOnError: true,
   });
 
-  const { data: subtasks, isPending: SubtasksLoading } = useQuery({
-    queryKey: ["subtasks", `goal-${id}`],
-    queryFn: async () => {
-      return (
-        await api.get<{
-          data: Subtask[];
-          total: number;
-          page: number;
-          limit: number;
-          totalPages: number;
-        }>(`goals/${id}/subtasks`)
-      ).data;
+  const {
+    status,
+    setStatus,
+    sortBy,
+    setSortBy,
+    search,
+    setSearch,
+    order,
+    setOrder,
+  } = useGoalFilter();
+
+  // Extract query parameters for filtering and pagination
+  const {
+    title,
+    page,
+    status: statusParam,
+    sortBy: sortByParam,
+    order: orderParam,
+    handlePagination,
+  } = useSearchParams();
+
+  const { data: subtasks, isPending: SubtasksLoading } = useFetchQuery<
+    Subtask[]
+  >({
+    endpoint: `goals/${id}/subtasks`,
+    params: {
+      title: title ?? undefined,
+      page: page ?? undefined,
+      status: statusParam ?? undefined,
+      sortBy: sortByParam ?? undefined,
+      order: orderParam ?? undefined,
     },
+    queryKey: [
+      "subtasks",
+      `goal-${id}`,
+      title,
+      page,
+      statusParam,
+      sortByParam,
+      orderParam,
+    ],
   });
+  const subTasks = subtasks?.data?.data;
+  // const { data: subtasks, isPending: SubtasksLoading } = useQuery({
+  //   queryKey: ["subtasks", `goal-${id}`],
+  //   queryFn: async () => {
+  //     return (
+  //       await api.get<>(`goals/${id}/subtasks`)
+  //     ).data;
+  //   },
+  // });
 
   if (dataLoading) {
     return <GoalDetailsSkeleton />;
   }
+  console.log(subtasks);
 
   return (
     <div className=" animate-in fade-in duration-500 p-4">
@@ -209,19 +251,31 @@ const GoalDetailsPage = () => {
           >
             <CardHeader className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Sub-tasks</h3>
-              <Button
-                className="flex items-center gap-2 bg-black text-white transition-colors"
-                aria-label="Add sub-task"
-                onPress={() => setShowAddTaskModal(true)}
-              >
-                <PlusIcon size={16} />
-                <span className="font-semibold">Add Sub-task</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Filters
+                  status={status}
+                  search={search}
+                  setOrder={setOrder}
+                  setSearch={setSearch}
+                  sortBy={sortBy}
+                  setSortBy={setSortBy}
+                  setStatus={setStatus}
+                  order={order}
+                  type="subtask"
+                />
+                <Button
+                  className="flex items-center !min-w-8 !px-0 h-8  gap-2 bg-black text-white transition-colors"
+                  aria-label="Add sub-task"
+                  onPress={() => setShowAddTaskModal(true)}
+                >
+                  <PlusIcon size={16} />
+                </Button>
+              </div>
             </CardHeader>
             <CardBody>
               <AnimatePresence mode="popLayout">
                 <div className="overflow-y-auto h-[30rem] flex flex-col gap-4">
-                  {subtasks?.data?.length === 0 && (
+                  {subTasks?.length === 0 && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -252,7 +306,7 @@ const GoalDetailsPage = () => {
                     </motion.div>
                   )}
 
-                  {subtasks?.data?.map((task) => (
+                  {subTasks?.map((task) => (
                     <SubtaskOverviewCard key={task.id} {...task} />
                   ))}
                   {SubtasksLoading && <SubtaskOverviewCardSkeleton />}
