@@ -1,20 +1,41 @@
 import { create } from "zustand";
 
 interface EditState {
-  isEditing: Record<string, string | null>; // { category: id }
-  setEdit: (category: string, id: string | null) => void;
+  isEditing: {
+    goal?: {
+      goalId: string | null;
+    };
+    subtask?: {
+      subtaskId: string | null;
+      goalId: string | null;
+    };
+  };
+  setEditGoal: (id: string | null) => void;
+  setEditSubtask: (taskId: string | null, goalId: string | null) => void;
+  clearEdits: () => void;
 }
 
 const useEdit = create<EditState>((set) => ({
   isEditing: {},
 
-  setEdit: (category, id) =>
-    set((state) => ({
+  setEditGoal: (id) =>
+    set(() => ({
       isEditing: {
-        ...state.isEditing,
-        [category]: id,
+        goal: {
+          goalId: id,
+        },
       },
     })),
+  setEditSubtask: (taskId, goalId) =>
+    set(() => ({
+      isEditing: {
+        subtask: {
+          subtaskId: taskId,
+          goalId: goalId,
+        },
+      },
+    })),
+  clearEdits: () => set({ isEditing: {} }),
 }));
 
 export default useEdit;
