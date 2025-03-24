@@ -1,17 +1,21 @@
 "use client";
-import { Card, Checkbox, Spinner } from "@heroui/react";
+import { Button, Card, Checkbox, Spinner } from "@heroui/react";
 import React, { useState } from "react";
 import StatusTag from "./status-tag";
-import { Calendar } from "lucide-react";
+import { Calendar, Trash } from "lucide-react";
 import { motion } from "framer-motion";
 import limitCharacters, { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import useDelete from "@/stores/useDelete";
+import useEdit from "@/stores/useEdit";
 
 const SubtaskOverviewCard = React.memo(
   ({ id, title, status, dueDate, description, goal }: Subtask) => {
     const [localStatus, setLocalStatus] = useState<string>(status);
+    const { setDeleteSubtask } = useDelete();
     const queryClient = useQueryClient();
+    const { setEditSubtask } = useEdit();
     const { mutate, isPending } = useMutation({
       mutationFn: async (newStatus: string) => {
         return await api.patch(`/goals/${goal}/subtasks/${id}`, {
@@ -51,7 +55,10 @@ const SubtaskOverviewCard = React.memo(
                 isSelected={localStatus === "completed"}
                 isDisabled={isPending}
               />
-              <div className="space-y-2">
+              <div
+                className="space-y-2 w-full cursor-pointer"
+                onClick={() => setEditSubtask(id, goal)}
+              >
                 <p
                   className={cn(
                     status === "completed" && "line-through",
@@ -77,8 +84,18 @@ const SubtaskOverviewCard = React.memo(
                 </div>
               </div>
             </div>
-            <div className={cn(isPending && "opacity-70")}>
-              <StatusTag status={localStatus} />
+            <div className="flex flex-col justify-between items-end">
+              <Button
+                isIconOnly
+                size="sm"
+                onPress={() => setDeleteSubtask(id, goal)}
+                className="bg-default-100 "
+              >
+                <Trash className="text-red-500" size={16} />
+              </Button>
+              <div className={cn(isPending && "opacity-70")}>
+                <StatusTag status={localStatus} />
+              </div>
             </div>
           </div>
         </Card>
