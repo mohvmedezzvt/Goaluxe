@@ -11,24 +11,14 @@ const axiosInstance = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-/**
- * Request interceptor to attach the token to request headers.
- *
- * @param {AxiosRequestConfig} config - Axios request configuration.
- * @returns {AxiosRequestConfig} - Modified configuration with Authorization header.
- */
+// Request Interceptor - Attach Token
 axiosInstance.interceptors.request.use((config) => {
   const token = sessionStorage.getItem("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-/**
- * Response interceptor to handle 401 Unauthorized errors by refreshing the token.
- *
- * @param {AxiosError} error - The error object from Axios response.
- * @returns {Promise<AxiosResponse>} - Retries the request with the new token.
- */
+// Response Interceptor - Handle 401 Errors
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -39,256 +29,169 @@ axiosInstance.interceptors.response.use(
         const newAccessToken = await auth.refresh();
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return axiosInstance(originalRequest);
-      } catch (refreshError) {
+      } catch {
         sessionStorage.clear();
         localStorage.clear();
-        return Promise.reject(refreshError);
+        return {
+          success: false,
+          error: "Session expired. Please log in again.",
+        };
       }
     }
-    return Promise.reject(error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "Request failed",
+    };
   }
 );
 
 /**
- * Utility function for interacting with API using axios.
+ * API Utility Functions - All return structured responses (No Throws)
  */
 export const api = {
-  /**
-   * GET request to the API.
-   *
-   * @param {string} endpoint - The API endpoint to call.
-   * @returns {Promise<ApiResponse<T>>} - The API response wrapped in a success/failure object.
-   */
-  get: async <T>(endpoint: string): Promise<ApiResponse<T>> => {
+  get: async <T>(
+    endpoint: string
+  ): Promise<{ success: boolean; data?: T; error?: string }> => {
     try {
       const { data } = await axiosInstance.get<T>(endpoint);
       return { success: true, data };
     } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Request failed"
-      );
+      return {
+        success: false,
+        error: error.response?.data?.message || "Request failed",
+      };
     }
   },
 
-  /**
-   * POST request to the API.
-   *
-   * @param {string} endpoint - The API endpoint to call.
-   * @param {any} body - The body to send with the request.
-   * @returns {Promise<ApiResponse<T>>} - The API response wrapped in a success/failure object.
-   */
-  post: async <T>(endpoint: string, body: any): Promise<ApiResponse<T>> => {
+  post: async <T>(
+    endpoint: string,
+    body: any
+  ): Promise<{ success: boolean; data?: T; error?: string }> => {
     try {
       const { data } = await axiosInstance.post<T>(endpoint, body);
       return { success: true, data };
     } catch (error: any) {
       return {
         success: false,
-        error:
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Request failed",
+        error: error.response?.data?.message || "Request failed",
       };
     }
   },
 
-  /**
-   * PUT request to the API.
-   *
-   * @param {string} endpoint - The API endpoint to call.
-   * @param {any} body - The body to send with the request.
-   * @returns {Promise<ApiResponse<T>>} - The API response wrapped in a success/failure object.
-   */
-  put: async <T>(endpoint: string, body: any): Promise<ApiResponse<T>> => {
+  put: async <T>(
+    endpoint: string,
+    body: any
+  ): Promise<{ success: boolean; data?: T; error?: string }> => {
     try {
       const { data } = await axiosInstance.put<T>(endpoint, body);
       return { success: true, data };
     } catch (error: any) {
       return {
         success: false,
-        error:
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Request failed",
+        error: error.response?.data?.message || "Request failed",
       };
     }
   },
 
-  /**
-   * PATCH request to the API.
-   *
-   * @param {string} endpoint - The API endpoint to call.
-   * @param {any} body - The body to send with the request.
-   * @returns {Promise<ApiResponse<T>>} - The API response wrapped in a success/failure object.
-   */
-  patch: async <T>(endpoint: string, body: any): Promise<ApiResponse<T>> => {
+  patch: async <T>(
+    endpoint: string,
+    body: any
+  ): Promise<{ success: boolean; data?: T; error?: string }> => {
     try {
       const { data } = await axiosInstance.patch<T>(endpoint, body);
       return { success: true, data };
     } catch (error: any) {
       return {
         success: false,
-        error:
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Request failed",
+        error: error.response?.data?.message || "Request failed",
       };
     }
   },
 
-  /**
-   * DELETE request to the API.
-   *
-   * @param {string} endpoint - The API endpoint to call.
-   * @returns {Promise<ApiResponse<T>>} - The API response wrapped in a success/failure object.
-   */
-  delete: async <T>(endpoint: string): Promise<ApiResponse<T>> => {
+  delete: async <T>(
+    endpoint: string
+  ): Promise<{ success: boolean; data?: T; error?: string }> => {
     try {
       const { data } = await axiosInstance.delete<T>(endpoint);
       return { success: true, data };
     } catch (error: any) {
       return {
         success: false,
-        error:
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Request failed",
+        error: error.response?.data?.message || "Request failed",
       };
     }
   },
 };
 
 /**
- * Authentication-related API calls.
+ * Authentication API - Returns structured responses (No Throws)
  */
 export const auth = {
-  /**
-   * Logs in a user with email and password.
-   *
-   * @param {string} email - User's email.
-   * @param {string} password - User's password.
-   * @returns {Promise<ApiResponse<LoginResponse>>} - Response containing user data and token.
-   */
   login: async (
     email: string,
     password: string
-  ): Promise<ApiResponse<LoginResponse>> => {
-    try {
-      const response = await api.post("/auth/login", { email, password });
-      if (!response.success) throw new Error("Login failed");
+  ): Promise<{
+    success: boolean;
+    data?: { token: string; user: any };
+    error?: string;
+  }> => {
+    const response = await api.post<{ token: string; user: any }>(
+      "/auth/login",
+      { email, password }
+    );
 
-      const data = response.data as LoginResponse;
-      const accessToken = data.token;
-      const user = data.user;
-
-      if (response.success && response.data) {
-        sessionStorage.setItem("token", accessToken);
-        sessionStorage.setItem("user", JSON.stringify(user));
-        localStorage.setItem("user", JSON.stringify(user));
-      }
-
-      return {
-        success: true,
-        data: { token: accessToken, user },
-      };
-    } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Request failed"
-      );
+    if (response.success) {
+      sessionStorage.setItem("token", response.data!.token);
+      sessionStorage.setItem("user", JSON.stringify(response.data!.user));
+      localStorage.setItem("user", JSON.stringify(response.data!.user));
     }
+
+    return response;
   },
 
-  /**
-   * Registers a new user with a username, email, and password.
-   *
-   * @param {string} username - User's chosen username.
-   * @param {string} email - User's email.
-   * @param {string} password - User's password.
-   * @returns {Promise<ApiResponse<RegisterResponse>>} - Registration result.
-   */
   register: async (
     username: string,
     email: string,
     password: string
-  ): Promise<ApiResponse<RegisterResponse>> => {
-    try {
-      const response = await api.post("/auth/register", {
-        username,
-        email,
-        password,
-      });
+  ): Promise<{ success: boolean; error?: string }> => {
+    const response = await api.post("/auth/register", {
+      username,
+      email,
+      password,
+    });
 
-      if (response.success && response.data) {
-        window.location.href = "/login"; // Redirect to login page after successful registration
-      }
-
-      return {
-        success: true,
-      };
-    } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Request failed"
-      );
+    if (response.success) {
+      window.location.href = "/login";
     }
+
+    return response;
   },
 
-  /**
-   * Refreshes the access token when expired.
-   *
-   * @returns {Promise<string>} - The new access token.
-   * @throws Will throw an error if the refresh fails.
-   */
-  refresh: async (): Promise<string> => {
-    try {
-      const response = await api.post(`/auth/refresh`, {});
-      if (!response.success) throw new Error("Refresh failed");
+  refresh: async (): Promise<{
+    success: boolean;
+    token?: string;
+    error?: string;
+  }> => {
+    const response = await api.post<{ token: string }>("/auth/refresh", {});
 
-      const data = response.data as LoginResponse;
-      const accessToken = data.token;
-
-      sessionStorage.setItem("token", accessToken);
-      return accessToken;
-    } catch (error: any) {
+    if (response.success) {
+      sessionStorage.setItem("token", response.data!.token);
+      return { success: true, token: response.data!.token };
+    } else {
       sessionStorage.clear();
       localStorage.clear();
-      throw new Error(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Request failed"
-      );
+      return response;
     }
   },
 
-  /**
-   * Logs out the user by clearing session data.
-   */
-  logout: async () => {
-    try {
-      const response = await api.post("/auth/logout", {});
-      if (!response.success) {
-        throw new Error("Logout failed");
-      }
+  logout: async (): Promise<{ success: boolean; error?: string }> => {
+    const response = await api.post("/auth/logout", {});
+    if (response.success) {
       sessionStorage.clear();
       localStorage.removeItem("user");
-    } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Request failed"
-      );
     }
+    return response;
   },
 
-  /**
-   * Checks if the user is authenticated.
-   *
-   * @returns {boolean} - Returns true if the user is authenticated, otherwise false.
-   */
-  isAuthenticated: () => !!sessionStorage.getItem("token"),
+  isAuthenticated: (): boolean => !!sessionStorage.getItem("token"),
 };
