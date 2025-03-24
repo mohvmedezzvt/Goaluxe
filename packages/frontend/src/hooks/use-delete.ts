@@ -11,8 +11,18 @@ import { useRouter } from "next/navigation";
  */
 export function useDeleteGoal() {
   const queryClient = useQueryClient();
-  const { isDeleting, setDelete } = useDelete();
+  const { isDeleting, clearDeletes } = useDelete();
   const router = useRouter();
+  const deletePath = isDeleting.goal?.goalId
+    ? `goals/${isDeleting.goal.goalId}` // Goal deletion
+    : `goals/${isDeleting.subtask?.goalId}/subtasks/${isDeleting.subtask?.subtaskId}`; // Subtask deletion
+
+  const mutationKey = [
+    `${isDeleting.goal?.goalId ? `Goal-${isDeleting.goal.goalId}` : `subtask-goal-${isDeleting.subtask?.goalId}`}-delete-${isDeleting.subtask?.subtaskId}`,
+  ];
+
+  const invalidateKey = isDeleting.goal?.goalId ? [`Goals`] : [`subtasks`];
+
   /**
    * Mutation for deleting a goal.
    *
@@ -21,13 +31,16 @@ export function useDeleteGoal() {
    * - Invalidates queries to refresh goal-related data.
    */
   const { mutate, isPending: deleteLoading } = useMutation({
-    mutationKey: [`Goal-delete-${isDeleting}`],
-    mutationFn: async (deletingGoal: string) =>
-      api.delete(`goals/${deletingGoal}`),
+    mutationKey: mutationKey,
+    mutationFn: async () => api.delete(deletePath),
     onSuccess: () => {
-      setDelete(null); // Only close modal after successful deletion
-      router.push("/dashboard");
-      queryClient.invalidateQueries({ queryKey: ["Goals"] });
+      if (isDeleting.goal?.goalId) {
+        router.push("/dashboard");
+      }
+      queryClient.invalidateQueries({ queryKey: invalidateKey });
+    },
+    onSettled: () => {
+      clearDeletes();
     },
   });
 
@@ -35,11 +48,9 @@ export function useDeleteGoal() {
    * Triggers the delete mutation if there is a goal set to be deleted.
    * Resets the `isDeleting` state after deletion.
    */
-  const handleDeleteGoal = async () => {
-    if (isDeleting) {
-      mutate(isDeleting);
-    }
+  const handleDelete = async () => {
+    mutate();
   };
 
-  return { handleDeleteGoal, deleteLoading };
+  return { handleDelete, deleteLoading };
 }

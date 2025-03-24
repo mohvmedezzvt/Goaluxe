@@ -1,4 +1,4 @@
-import { useDeleteGoal } from "@/hooks/use-delete-goal";
+import { useDeleteGoal } from "@/hooks/use-delete";
 import useDelete from "@/stores/useDelete";
 import {
   Modal,
@@ -26,30 +26,31 @@ import React from "react";
  *
  * @dependencies
  * - useDelete hook - Provides setDelete function to manage deletion state
- * - useDeleteGoal hook - Provides handleDeleteGoal function and isDeleting state
+ * - useDeleteGoal hook - Provides handleDelete function and isDeleting state
  * - Modal components from UI library
  */
 const DeleteModal = () => {
-  const { setDelete, isDeleting } = useDelete();
-  const { handleDeleteGoal, deleteLoading } = useDeleteGoal(); // Hook for deleting goals
+  const { isDeleting, clearDeletes } = useDelete();
+  const { handleDelete, deleteLoading } = useDeleteGoal(); // Hook for deleting goals
 
   return (
     <Modal
       backdrop="blur"
-      isOpen={!!isDeleting}
-      onClose={() => setDelete(null)}
+      isOpen={!!isDeleting.goal || !!isDeleting.subtask}
+      onClose={() => clearDeletes()}
     >
       <ModalContent className="text-foreground-800">
         <ModalHeader> Are you sure?</ModalHeader>
         <ModalBody>
-          This action cannot be undone. This will permanently delete your goal
+          This action cannot be undone. This will permanently delete your
+          {isDeleting.subtask?.subtaskId ? " subtask " : " goal "}
           and remove it from our servers.
         </ModalBody>
         <ModalFooter>
-          <Button onPress={() => setDelete(null)}>Cancel</Button>
+          <Button onPress={() => clearDeletes()}>Cancel</Button>
           <Button
             isLoading={deleteLoading}
-            onPress={handleDeleteGoal}
+            onPress={handleDelete}
             className="bg-red-600 hover:bg-red-700 text-white"
           >
             Delete
