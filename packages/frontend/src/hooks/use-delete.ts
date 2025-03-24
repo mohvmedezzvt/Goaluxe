@@ -34,11 +34,13 @@ export function useDeleteGoal() {
     mutationKey: mutationKey,
     mutationFn: async () => api.delete(deletePath),
     onSuccess: () => {
-      clearDeletes(); // Only close modal after successful deletion
       if (isDeleting.goal?.goalId) {
         router.push("/dashboard");
       }
       queryClient.invalidateQueries({ queryKey: invalidateKey });
+    },
+    onSettled: () => {
+      clearDeletes();
     },
   });
 
