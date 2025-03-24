@@ -13,7 +13,7 @@ import {
   Plus,
 } from "lucide-react";
 import { EllipsisVertical } from "lucide-react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Button,
@@ -24,6 +24,7 @@ import {
   DropdownItem,
   DropdownMenu,
   DropdownTrigger,
+  Pagination,
   Progress,
 } from "@heroui/react";
 import StatusTag from "@/components/goals/status-tag";
@@ -34,7 +35,7 @@ import {
 import useDelete from "@/stores/useDelete";
 import useEdit from "@/stores/useEdit";
 import DeleteModal from "@/components/modals/delete-modal";
-import { EditGoalModal } from "@/components/modals/edit-modal";
+import { EditGoalModal } from "@/components/modals/edit-goal-modal";
 import limitCharacters from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import SubtaskOverviewCard from "@/components/goals/subtask-overview-card";
@@ -44,21 +45,28 @@ import useGoalFilter from "@/stores/useGoalFilter";
 import { useFetchQuery } from "@/hooks/use-fetch-query";
 import { useSearchParams } from "@/hooks/use-search-params";
 
+/**
+ * GoalDetailsPage component renders the details of a specific goal.
+ * It includes information like title, description, progress, status, subtasks, and rewards.
+ * Users can edit, delete, and manage subtasks related to the goal.
+ */
 const GoalDetailsPage = () => {
-  const { id } = useParams();
-  const { setEditGoal } = useEdit();
-  const { setDeleteGoal } = useDelete();
-  const [isShowMore, setIsShowMore] = useState(false);
-  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  const { id } = useParams(); // Extracts goal ID from the URL params
+  const { setEditGoal, clearEdits } = useEdit(); // Handles editing a goal
+  const { setDeleteGoal } = useDelete(); // Handles goal deletion
+  const [isShowMore, setIsShowMore] = useState(false); // Toggle state for showing full description
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false); // Modal state for adding tasks
+
+  // Fetch goal details
   const { data: goal, isPending: dataLoading } = useQuery({
     queryKey: ["goal", id],
     queryFn: async () => {
       return (await api.get<Goal>(`goals/${id}`)).data;
     },
-
     throwOnError: true,
   });
 
+  // Filters and sorting state management
   const {
     status,
     setStatus,
@@ -80,6 +88,7 @@ const GoalDetailsPage = () => {
     handlePagination,
   } = useSearchParams();
 
+  // Fetch subtasks related to the goal
   const { data: subtasks, isPending: SubtasksLoading } = useFetchQuery<
     Subtask[]
   >({
@@ -101,20 +110,44 @@ const GoalDetailsPage = () => {
       orderParam,
     ],
   });
-  const subTasks = subtasks?.data?.data;
-  // const { data: subtasks, isPending: SubtasksLoading } = useQuery({
-  //   queryKey: ["subtasks", `goal-${id}`],
-  //   queryFn: async () => {
-  //     return (
-  //       await api.get<>(`goals/${id}/subtasks`)
-  //     ).data;
-  //   },
-  // });
 
+  const subTasksData = useMemo(() => {
+    const data = subtasks?.data?.data || [];
+    const totalPages = subtasks?.data?.totalPages || 0;
+    return { data, totalPages };
+  }, [subtasks]);
   if (dataLoading) {
-    return <GoalDetailsSkeleton />;
+    return <GoalDetailsSkeleton />; // Show skeleton while loading goal data
   }
-  console.log(subtasks);
+
+  const handleEditGoal = () => {
+    clearEdits();
+    setEditGoal(String(id));
+  };
+
+  // Renders the description section of a goal with a "show more/less" functionality
+  const renderDescription = () => {
+    if (!goal?.description) return null;
+    if (goal.description.length <= 200)
+      return <p className="text-gray-500">{goal.description}</p>;
+
+    return (
+      <div>
+        <p className="text-gray-500">
+          {isShowMore
+            ? goal.description
+            : limitCharacters({ str: goal.description, maxLength: 200 }) +
+              "..."}
+        </p>
+        <p
+          className="underline cursor-pointer"
+          onClick={() => setIsShowMore((prev) => !prev)}
+        >
+          {isShowMore ? "Show less" : "Show more"}
+        </p>
+      </div>
+    );
+  };
 
   return (
     <div className=" animate-in fade-in duration-500 p-4">
@@ -134,7 +167,10 @@ const GoalDetailsPage = () => {
                 <h2 className="text-2xl font-bold">{goal?.title}</h2>
               </div>
               <Dropdown placement="left">
-                <DropdownTrigger className="w-fit !min-w-0 !h-auto">
+                <DropdownTrigger
+                  className="w-fit !min-w-0 !h-auto"
+                  aria-label="More options"
+                >
                   <Button
                     isIconOnly
                     className="bg-white dark:bg-black hover:bg-default-200 rounded-full transition-colors"
@@ -145,10 +181,7 @@ const GoalDetailsPage = () => {
                 </DropdownTrigger>
                 <DropdownMenu className="space-y-3">
                   {/* Edit Goal Option */}
-                  <DropdownItem
-                    key="edit"
-                    onPress={() => setEditGoal(String(id))}
-                  >
+                  <DropdownItem key="edit" onPress={handleEditGoal}>
                     <div className="flex text-foreground-800  items-center justify-between">
                       <p>Edit goal</p>
                       <Pencil size={17} />
@@ -174,39 +207,7 @@ const GoalDetailsPage = () => {
               </Dropdown>
             </div>
             {/* Goal Description Section */}
-            <div className="max-w-[60%] ml-5">
-              {goal?.description && goal.description.length > 200 ? (
-                isShowMore ? (
-                  <div>
-                    <p className="text-gray-500">{goal.description}</p>
-                    <p
-                      className="underline cursor-pointer"
-                      onClick={() => setIsShowMore(false)}
-                    >
-                      Show less
-                    </p>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-gray-500">
-                      {limitCharacters({
-                        str: goal.description,
-                        maxLength: 200,
-                      })}
-                      ...
-                    </p>
-                    <p
-                      className="underline cursor-pointer"
-                      onClick={() => setIsShowMore(true)}
-                    >
-                      Show more
-                    </p>
-                  </div>
-                )
-              ) : (
-                <p className="text-gray-500">{goal?.description}</p>
-              )}
-            </div>
+            <div className="max-w-[60%] ml-5">{renderDescription()}</div>
           </div>
 
           {/* Progress Section */}
@@ -249,75 +250,86 @@ const GoalDetailsPage = () => {
           </Card>
 
           {/* Sub-tasks Section */}
-          <Card
-            className="col-span-full lg:col-span-4 p-4 border shadow-sm row-span-2 overflow-auto"
-            shadow="none"
-          >
-            <CardHeader className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Sub-tasks</h3>
-              <div className="flex items-center gap-2">
-                <Filters
-                  status={status}
-                  search={search}
-                  setOrder={setOrder}
-                  setSearch={setSearch}
-                  sortBy={sortBy}
-                  setSortBy={setSortBy}
-                  setStatus={setStatus}
-                  order={order}
-                  type="subtask"
-                />
-                <Button
-                  className="flex items-center !min-w-8 !px-0 h-8  gap-2 bg-black text-white transition-colors"
-                  aria-label="Add sub-task"
-                  onPress={() => setShowAddTaskModal(true)}
-                >
-                  <PlusIcon size={16} />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardBody>
-              <AnimatePresence mode="popLayout">
-                <div className="overflow-y-auto h-[30rem] flex flex-col gap-4">
-                  {subTasks?.length === 0 && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="h-full"
-                    >
-                      <Card
-                        className="flex justify-center items-center p-8 text-center bg-muted/50 h-full border border-dashed"
-                        shadow="none"
-                      >
-                        <div>
-                          <DiamondMinus className="w-8 h-8 mx-auto text-muted-foreground" />
-                          <p className="mt-4 text-lg font-medium">
-                            No tasks yet
-                          </p>
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            Start by adding your first task!
-                          </p>
-                          <Button
-                            // onPress={() => setShowAddDialog(true)}
-                            className="mt-4 bg-black text-white"
-                            onPress={() => setShowAddTaskModal(true)}
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Your First Task
-                          </Button>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  )}
-
-                  {subTasks?.map((task) => (
-                    <SubtaskOverviewCard key={task.id} {...task} />
-                  ))}
-                  {SubtasksLoading && <SubtaskOverviewCardSkeleton />}
+          <div className="col-span-full lg:col-span-4 row-span-2 flex flex-col items-center gap-6">
+            <Card
+              className=" p-4 border shadow-sm w-full  overflow-auto"
+              shadow="none"
+            >
+              <CardHeader className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Sub-tasks</h3>
+                <div className="flex items-center gap-2">
+                  <Filters
+                    status={status}
+                    search={search}
+                    setOrder={setOrder}
+                    setSearch={setSearch}
+                    sortBy={sortBy}
+                    setSortBy={setSortBy}
+                    setStatus={setStatus}
+                    order={order}
+                    type="subtask"
+                  />
+                  <Button
+                    className="flex items-center !min-w-8 !px-0 h-8  gap-2 bg-black text-white transition-colors"
+                    aria-label="Add sub-task"
+                    onPress={() => setShowAddTaskModal(true)}
+                  >
+                    <PlusIcon size={16} />
+                  </Button>
                 </div>
-              </AnimatePresence>
-            </CardBody>
-          </Card>
+              </CardHeader>
+              <CardBody>
+                <AnimatePresence mode="popLayout">
+                  <div className="overflow-y-auto h-[30rem] flex flex-col gap-4">
+                    {subTasksData.data?.length === 0 && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="h-full"
+                      >
+                        <Card
+                          className="flex justify-center items-center p-8 text-center bg-muted/50 h-full border border-dashed"
+                          shadow="none"
+                        >
+                          <div>
+                            <DiamondMinus className="w-8 h-8 mx-auto text-muted-foreground" />
+                            <p className="mt-4 text-lg font-medium">
+                              No tasks yet
+                            </p>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              Start by adding your first task!
+                            </p>
+                            <Button
+                              // onPress={() => setShowAddDialog(true)}
+                              className="mt-4 bg-black text-white"
+                              onPress={() => setShowAddTaskModal(true)}
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add Your First Task
+                            </Button>
+                          </div>
+                        </Card>
+                      </motion.div>
+                    )}
+
+                    {subTasksData.data?.map((task) => (
+                      <SubtaskOverviewCard key={task.id} {...task} />
+                    ))}
+                    {SubtasksLoading && <SubtaskOverviewCardSkeleton />}
+                  </div>
+                </AnimatePresence>
+              </CardBody>
+            </Card>
+            {subTasksData.totalPages >= 2 && (
+              <Pagination
+                className="bg-default-100 rounded-2xl w-fit"
+                total={subTasksData.totalPages || 0}
+                page={page}
+                initialPage={1}
+                onChange={(page) => handlePagination(page)}
+              />
+            )}
+          </div>
 
           {/* Reward Section */}
           <Card className="col-span-full lg:col-span-2 p-4 border shadow-sm">
