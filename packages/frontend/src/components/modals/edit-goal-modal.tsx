@@ -70,26 +70,32 @@ export function EditGoalModal() {
       description: Goal["description"];
     }
   >({
-    mutationKey: ["goal", isEditing],
+    mutationKey: ["goal", isEditing.goal?.goalId],
     mutationFn: async (data) => {
-      return await api.put(`goals/${isEditing}`, data);
+      return await api.put(`goals/${isEditing.goal?.goalId}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["goal", isEditing] });
+      queryClient.invalidateQueries({
+        queryKey: ["goal", isEditing.goal?.goalId],
+      });
       queryClient.invalidateQueries({ queryKey: ["Goals"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      clearEdits(); // Close modal after successful update
+    },
+    onSettled: () => {
+      clearEdits(); // Clears after the request is completed
     },
   });
 
+  const goalId = isEditing.goal?.goalId; // Extract goalId explicitly
+
   // Query to fetch the goal data
   const { data: goal } = useQuery({
-    queryKey: ["goal", isEditing],
+    queryKey: ["goal", isEditing.goal?.goalId],
     queryFn: async () => {
-      const response = (await api.get<Goal>(`goals/${isEditing}`)).data;
+      const response = (await api.get<Goal>(`goals/${goalId}`)).data;
       return response;
     },
-    enabled: !!isEditing, // Only fetch if `isEditing` is truthy
+    enabled: !!goalId, // Only fetch if `isEditing` is truthy
   });
 
   useEffect(() => {
@@ -118,10 +124,11 @@ export function EditGoalModal() {
 
   /**
    * Handles setting the due date and validates it.
+   * Uses useCallback to memoize the function.
    *
    * @param {CalendarDate | null} dueDate - The due date selected from the DatePicker.
    */
-  const handleSetDueDate = (dueDate: HeroUIDate | null) => {
+  const handleSetDueDate = useCallback((dueDate: HeroUIDate | null) => {
     const formattedDueDate = dueDate
       ? format(dueDate.toDate("UTC"), "yyyy-MM-dd")
       : null;
@@ -137,7 +144,7 @@ export function EditGoalModal() {
       ...prev,
       dueDate,
     }));
-  };
+  }, []);
 
   /**
    * Handles form submission.
@@ -173,14 +180,12 @@ export function EditGoalModal() {
   return (
     <Modal
       backdrop="blur"
-      isOpen={!!isEditing.goal || !!isEditing.subtask}
+      isOpen={!!isEditing.goal}
       onClose={() => clearEdits()}
     >
       <ModalContent className="text-foreground-800">
         <form onSubmit={handleSubmit}>
-          <ModalHeader>
-            Edit {isEditing.goal?.goalId ? "Goal" : "Subtask"}
-          </ModalHeader>
+          <ModalHeader>Edit Goal</ModalHeader>
           <ModalBody>
             <div className="space-y-4 py-4">
               {/* Title Input */}
