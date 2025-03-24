@@ -110,17 +110,27 @@ export default function DashboardPage() {
   });
 
   // Extract goals data from the response
-  const goals = Goals?.data?.data || [];
-  const totalPages = Goals?.data?.totalPages || 0;
+  const goals = useMemo(() => Goals?.data?.data || [], [Goals]);
+
+  const totalPages = useMemo(() => Goals?.data?.totalPages || 0, [Goals]);
 
   // Categorize goals into active and completed
-  const activeGoals = analytics?.activeCount || 0;
-  const dueSoonGoals = analytics?.dueSoonTasks || [];
-  const completedGoals = analytics?.completedCount || 0;
-  const dueSoonCount = analytics?.dueSoonCount || 0;
 
-  // Calculate the average progress of all goals
-  const averageProgress = analytics?.overallProgress || 0;
+  const analyticsData = useMemo(() => {
+    const activeGoals = analytics?.activeCount || 0;
+    const dueSoonGoals = analytics?.dueSoonTasks || [];
+    const completedGoals = analytics?.completedCount || 0;
+    const dueSoonCount = analytics?.dueSoonCount || 0;
+    const averageProgress = analytics?.overallProgress || 0;
+
+    return {
+      activeGoals,
+      dueSoonGoals,
+      completedGoals,
+      dueSoonCount,
+      averageProgress,
+    };
+  }, [analytics]);
 
   const isLoading = loadingAnalytics || loadingGoals;
   const isDataEmpty = !isLoading && !title && !status && goals.length === 0;
@@ -132,29 +142,29 @@ export default function DashboardPage() {
       {
         icon: <Target className="h-5 w-5 text-primary" />,
         label: "Active Goals",
-        value: activeGoals,
+        value: analyticsData.activeGoals,
         bgColor: "bg-primary/10",
       },
       {
         icon: <CheckCircle2 className="h-5 w-5 text-green-600" />,
         label: "Completed",
-        value: completedGoals,
+        value: analyticsData.completedGoals,
         bgColor: "bg-green-100 dark:bg-green-900/20",
       },
       {
         icon: <ArrowUpRight className="h-5 w-5 text-blue-600" />,
         label: "Progress",
-        value: `${averageProgress.toFixed(0)}%`,
+        value: `${analyticsData.averageProgress.toFixed(0)}%`,
         bgColor: "bg-blue-100 dark:bg-blue-900/20",
       },
       {
         icon: <Clock className="h-5 w-5 text-orange-600" />,
         label: "Due Soon Goals",
-        value: dueSoonCount,
+        value: analyticsData.dueSoonCount,
         bgColor: "bg-orange-100 dark:bg-orange-900/20",
       },
     ],
-    [activeGoals, completedGoals, averageProgress, dueSoonCount]
+    [analyticsData]
   );
 
   return (
@@ -303,18 +313,25 @@ export default function DashboardPage() {
                   <span className="text-muted-foreground">
                     Overall Progress
                   </span>
-                  <span>{averageProgress.toFixed(0)}%</span>
+                  <span>{analyticsData.averageProgress.toFixed(0)}%</span>
                 </div>
-                <Progress value={averageProgress} className="h-2" />
+                <Progress
+                  value={analyticsData.averageProgress}
+                  className="h-2"
+                />
               </div>
               <div className="pt-4 space-y-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Active Goals</span>
-                  <span className="font-medium">{activeGoals}</span>
+                  <span className="font-medium">
+                    {analyticsData.activeGoals}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Completed</span>
-                  <span className="font-medium">{completedGoals}</span>
+                  <span className="font-medium">
+                    {analyticsData.completedGoals}
+                  </span>
                 </div>
               </div>
             </div>
@@ -335,7 +352,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardBody>
             <div className="space-y-4 max-h-[300px] overflow-y-auto scrollbar-thin">
-              {dueSoonGoals.map((goal) => (
+              {analyticsData.dueSoonGoals.map((goal) => (
                 <div
                   key={goal.id}
                   className="flex justify-between items-center"
@@ -349,7 +366,7 @@ export default function DashboardPage() {
                   <Progress value={goal.progress} className="w-20 h-2" />
                 </div>
               ))}
-              {dueSoonGoals?.length === 0 && (
+              {analyticsData.dueSoonGoals?.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   No upcoming Subtasks
                 </p>
