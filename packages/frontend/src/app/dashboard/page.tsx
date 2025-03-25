@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { AddGoalModal } from "@/components/modals/add-goal-modal";
-import { Filters, NoSearchResults } from "@/components/goals/goals-filters";
+import { Filters, NoSearchResults } from "@/components/goals/filters";
 import GoalOverviewCard from "@/components/goals/goal-overview-card";
 import {
   QuickStatusCardSkeleton,
