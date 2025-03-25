@@ -33,4 +33,27 @@ function limitCharacters({
   return str.length > maxLength ? str.slice(0, maxLength) + "..." : str;
 }
 
+export function checkDueDate(dueDate: string): {
+  isOverdue: boolean;
+  daysOverdue: number;
+} {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0); // Normalize to midnight
+
+  const due = new Date(dueDate);
+  due.setHours(0, 0, 0, 0); // Normalize to midnight
+
+  if (isNaN(due.getTime())) {
+    throw new Error(`Invalid date format: ${dueDate}`);
+  }
+
+  const timeDiff = Date.now() - due.getTime();
+  const daysOverdue = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+
+  return {
+    isOverdue: timeDiff > 0,
+    daysOverdue: timeDiff > 0 ? daysOverdue : 0,
+  };
+}
+
 export default limitCharacters;
