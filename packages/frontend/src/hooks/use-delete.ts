@@ -34,10 +34,10 @@ export function useDeleteGoal() {
     mutationKey: mutationKey,
     mutationFn: async () => api.delete(deletePath),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: invalidateKey });
       if (isDeleting.goal?.goalId) {
         router.push("/dashboard");
       }
-      queryClient.invalidateQueries({ queryKey: invalidateKey });
     },
     onSettled: () => {
       clearDeletes();

@@ -39,8 +39,8 @@ const SubtaskOverviewCard = React.memo(
 
     const handleComplete = () => {
       const newStatus = localStatus === "completed" ? "pending" : "completed";
-      setLocalStatus(newStatus);
       mutate(newStatus);
+      setLocalStatus(newStatus);
     };
 
     return (
