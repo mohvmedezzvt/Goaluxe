@@ -5,8 +5,10 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import withPathLayout from "./hoc/with-path-layout";
 import ThemeSwitch from "./ui/theme-switch";
+import { useAuth } from "@/hooks/use-auth";
 
 const Header = () => {
+  const { isAuthenticated } = useAuth();
   return (
     <motion.nav
       className="fixed w-full border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm z-20 transition-colors duration-300"
@@ -48,22 +50,35 @@ const Header = () => {
             >
               Join Waitlist
             </Button>
-            <Link href="/login">
-              <Button
-                size="sm"
-                className="bg-white bg-gradient-to-r from-pink-500 to-orange-500 bg-clip-text text-transparent border"
-              >
-                Login
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button
-                size="sm"
-                className=" bg-gradient-to-r from-pink-500 to-orange-500"
-              >
-                SignUp
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <Link href="/dashboard">
+                <Button
+                  size="sm"
+                  className="text-white bg-gradient-to-r from-pink-500 to-orange-500"
+                >
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button
+                    size="sm"
+                    className="bg-white bg-gradient-to-r from-pink-500 to-orange-500 bg-clip-text text-transparent border"
+                  >
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button
+                    size="sm"
+                    className=" bg-gradient-to-r from-pink-500 to-orange-500"
+                  >
+                    SignUp
+                  </Button>
+                </Link>
+              </>
+            )}
 
             <ThemeSwitch />
           </div>
