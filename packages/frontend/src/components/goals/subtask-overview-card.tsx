@@ -1,6 +1,6 @@
 "use client";
 import { Button, Card, Checkbox, Spinner } from "@heroui/react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import StatusTag from "./status-tag";
 import { Calendar, Trash } from "lucide-react";
 import { motion } from "framer-motion";
@@ -16,6 +16,12 @@ const SubtaskOverviewCard = React.memo(
     const { setDeleteSubtask } = useDelete();
     const queryClient = useQueryClient();
     const { setEditSubtask } = useEdit();
+
+    // Sync localStatus with prop changes
+    useEffect(() => {
+      setLocalStatus(status);
+    }, [status]);
+
     const { mutate, isPending } = useMutation({
       mutationFn: async (newStatus: string) => {
         return await api.patch(`/goals/${goal}/subtasks/${id}`, {
@@ -46,7 +52,12 @@ const SubtaskOverviewCard = React.memo(
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.2 }}
       >
-        <Card className="p-4 border shadow-sm hover:shadow-md transition-shadow min-h-fit decoration-default-foreground">
+        <Card
+          className={cn(
+            "p-4 border shadow-sm hover:shadow-md border-default-300 transition-shadow min-h-fit decoration-default-foreground",
+            localStatus === "completed" && "!opacity-30"
+          )}
+        >
           <div className="flex justify-between">
             <div className="flex items-start gap-3 w-[60%]">
               <Checkbox
@@ -61,7 +72,7 @@ const SubtaskOverviewCard = React.memo(
               >
                 <p
                   className={cn(
-                    status === "completed" && "line-through",
+                    localStatus === "completed" && "line-through",
                     "font-medium"
                   )}
                 >
@@ -69,7 +80,7 @@ const SubtaskOverviewCard = React.memo(
                 </p>
                 <p
                   className={cn(
-                    status === "completed" && "line-through",
+                    localStatus === "completed" && "line-through",
                     "text-gray-500 text-sm"
                   )}
                 >
@@ -89,7 +100,7 @@ const SubtaskOverviewCard = React.memo(
                 isIconOnly
                 size="sm"
                 onPress={() => setDeleteSubtask(id, goal)}
-                className="bg-default-100 "
+                className="bg-default-100"
               >
                 <Trash className="text-red-500" size={16} />
               </Button>
@@ -103,5 +114,6 @@ const SubtaskOverviewCard = React.memo(
     );
   }
 );
+
 SubtaskOverviewCard.displayName = "SubtaskOverviewCard";
 export default SubtaskOverviewCard;
