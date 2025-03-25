@@ -11,16 +11,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { auth } from "@/lib/api";
 import {
   validateEmail,
   validatePassword,
   validateUsername,
   isStrongPassword,
 } from "@/lib/validations";
-import { addToast } from "@heroui/react";
 import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
 
 interface AuthFormProps {
   mode: "login" | "register";
@@ -37,9 +34,8 @@ interface FormErrors {
 }
 
 export function AuthForm({ mode }: AuthFormProps) {
-  const { login } = useAuth();
+  const { handleAuth } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -105,58 +101,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-
-    try {
-      let response;
-
-      if (mode === "login") {
-        response = await auth.login(formData.email, formData.password);
-      } else {
-        response = await auth.register(
-          `${formData.firstName} ${formData.secondName}`,
-          formData.email,
-          formData.password
-        );
-      }
-
-      if (!response.success || !response.data) {
-        throw new Error(response.error || "Authentication failed");
-      }
-
-      addToast({
-        title:
-          mode === "login"
-            ? `Welcome back, ${response.data.user.username}!`
-            : "Account created successfully!",
-        color: "success",
-        timeout: 2000,
-      });
-
-      await login(response.data.user);
-      router.push("/dashboard");
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred. Please try again later.";
-      setErrors({
-        general:
-          mode === "login"
-            ? "Login failed. Incorrect email or password. Please try again."
-            : "Signup failed. Please check your details and try again.",
-      });
-      addToast({
-        title: mode === "login" ? "Login Error" : "SignUp Error",
-        description: errorMessage,
-        color: "danger",
-        timeout: 2000,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    await handleAuth(mode, formData, validateForm, setErrors, setIsLoading);
   };
 
   return (

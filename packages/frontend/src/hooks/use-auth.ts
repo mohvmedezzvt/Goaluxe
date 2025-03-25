@@ -1,10 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { auth } from "@/lib/api";
-import { addToast } from "@heroui/react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { auth } from "@/lib/api";
+import { addToast } from "@heroui/react";
+interface AuthResponse {
+  success: boolean;
+  error?: string;
+  data?: {
+    user: User;
+  };
+}
 
 interface AuthState {
   user: User | null;
@@ -12,35 +19,25 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (userData: User) => Promise<void>;
   logout: () => Promise<void>;
+  handleAuth: (
+    mode: "login" | "register",
+    formData: any,
+    validateForm: () => boolean,
+    setErrors: (errors: any) => void,
+    setIsLoading: (loading: boolean) => void
+  ) => Promise<void>;
 }
 
-/**
- * Custom hook to manage authentication state in a Next.js application.
- *
- * This hook provides methods for login, logout, and authentication status.
- * It also synchronizes authentication state with session storage.
- *
- * @returns {AuthState} Authentication state and actions:
- * - `user`: The currently authenticated user (or `null` if not logged in).
- * - `loading`: Boolean indicating whether authentication is being checked.
- * - `isAuthenticated`: Boolean indicating if a user is logged in.
- * - `login`: Function to authenticate and set user state.
- * - `logout`: Function to log out and clear user state.
- */
 export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // Run authentication check on mount
   useEffect(() => {
     checkAuth();
   }, []);
 
-  /**
-   * Checks if a user is stored in session storage and sets authentication state accordingly.
-   */
   const checkAuth = async () => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -49,7 +46,7 @@ export function useAuth(): AuthState {
         setUser(parsedUser);
       }
     } catch (error) {
-      console.error("Failed to parse user data from session storage:", error);
+      console.error("Failed to parse user data from storage:", error);
       addToast({
         title: "Authentication Error",
         description: "Failed to load user data. Please log in again.",
@@ -61,11 +58,6 @@ export function useAuth(): AuthState {
     }
   };
 
-  /**
-   * Logs in the user by setting the user state and storing it in session storage.
-   *
-   * @param {User} userData - The authenticated user data.
-   */
   const login = async (userData: User) => {
     try {
       setUser(userData);
@@ -75,21 +67,18 @@ export function useAuth(): AuthState {
     }
   };
 
-  /**
-   * Logs out the user by clearing authentication state, session storage, and redirecting to login.
-   */
   const logout = async () => {
     try {
       await auth.logout();
       setUser(null);
       localStorage.removeItem("user");
-      queryClient.clear(); // Clear all cached queries
+      queryClient.clear();
       addToast({
         title: "Logged Out",
         description: "You have been logged out successfully.",
         timeout: 2500,
       });
-      router.push("/"); // Redirect user to login page
+      router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
       addToast({
@@ -100,11 +89,75 @@ export function useAuth(): AuthState {
     }
   };
 
+  const handleAuth = useCallback(
+    async (
+      mode: "login" | "register",
+      formData: any,
+      validateForm: () => boolean,
+      setErrors: (errors: any) => void,
+      setIsLoading: (loading: boolean) => void
+    ) => {
+      if (!validateForm()) return;
+
+      setIsLoading(true);
+
+      try {
+        let response: AuthResponse;
+        if (mode === "login") {
+          response = await auth.login(formData.email, formData.password);
+        } else {
+          response = await auth.register(
+            `${formData.firstName} ${formData.secondName}`,
+            formData.email,
+            formData.password
+          );
+        }
+
+        if (!response.success || !response.data) {
+          throw new Error(response.error || "Authentication failed");
+        }
+
+        addToast({
+          title:
+            mode === "login"
+              ? `Welcome back, ${response.data.user.username}!`
+              : "Account created successfully!",
+          color: "success",
+          timeout: 2000,
+        });
+
+        await login(response.data.user);
+        router.push("/dashboard");
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again later.";
+        setErrors({
+          general:
+            mode === "login"
+              ? "Login failed. Incorrect email or password. Please try again."
+              : "Signup failed. Please check your details and try again.",
+        });
+        addToast({
+          title: mode === "login" ? "Login Error" : "SignUp Error",
+          description: errorMessage,
+          color: "danger",
+          timeout: 2000,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [login, router]
+  );
+
   return {
     user,
     loading,
     isAuthenticated: !!user,
     login,
     logout,
+    handleAuth,
   };
 }
