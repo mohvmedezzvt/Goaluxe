@@ -251,7 +251,7 @@ export default function DashboardPage() {
                 )}
 
                 {/* Empty States */}
-                {isSearchResultEmpty && <NoSearchResults />}
+                {isSearchResultEmpty && <NoSearchResults itemType="goals" />}
 
                 {isDataEmpty && (
                   <motion.div
