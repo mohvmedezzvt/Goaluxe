@@ -40,10 +40,11 @@ import limitCharacters from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import SubtaskOverviewCard from "@/components/goals/subtask-overview-card";
 import AddTaskModal from "@/components/modals/add-task-modal";
-import { Filters } from "@/components/goals/goals-filters";
+import { Filters, NoSearchResults } from "@/components/goals/filters";
 import useGoalFilter from "@/stores/useGoalFilter";
 import { useFetchQuery } from "@/hooks/use-fetch-query";
 import { useSearchParams } from "@/hooks/use-search-params";
+import SubtaskDetailsModal from "@/components/modals/subtask-details-modal";
 
 /**
  * GoalDetailsPage component renders the details of a specific goal.
@@ -116,6 +117,7 @@ const GoalDetailsPage = () => {
     const totalPages = subtasks?.data?.totalPages || 0;
     return { data, totalPages };
   }, [subtasks]);
+
   if (dataLoading) {
     return <GoalDetailsSkeleton />; // Show skeleton while loading goal data
   }
@@ -148,6 +150,12 @@ const GoalDetailsPage = () => {
       </div>
     );
   };
+
+  const isLoading = SubtasksLoading || dataLoading;
+  const isDataEmpty =
+    !isLoading && !title && !status && subtasks?.data?.data.length === 0;
+  const isSearchResultEmpty =
+    (title || status) && subtasks?.data?.data.length === 0;
 
   return (
     <div className=" animate-in fade-in duration-500 p-4">
@@ -281,7 +289,11 @@ const GoalDetailsPage = () => {
               <CardBody>
                 <AnimatePresence mode="popLayout">
                   <div className="overflow-y-auto h-[30rem] flex flex-col gap-4">
-                    {subTasksData.data?.length === 0 && (
+                    {/* Empty States */}
+                    {isSearchResultEmpty && (
+                      <NoSearchResults itemType="subTasks" />
+                    )}
+                    {isDataEmpty && (
                       <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -384,6 +396,7 @@ const GoalDetailsPage = () => {
           </Card> */}
         </div>
       </div>
+      <SubtaskDetailsModal />
       <EditGoalModal />
       <AddTaskModal
         open={showAddTaskModal}
