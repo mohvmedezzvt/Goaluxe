@@ -17,9 +17,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ChangeEvent, useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import Badge from "../ui/badge";
-import useGoalFilter, {
-  useInitializeFilterFromURL,
-} from "@/stores/useGoalFilter";
+import { useInitializeFilterFromURL } from "@/stores/useGoalFilter";
 import { AnimatePresence, motion } from "framer-motion";
 import { Card } from "../ui/card";
 
@@ -327,7 +325,7 @@ export function Filters({
  *
  * @returns {JSX.Element} The rendered NoSearchResults component.
  */
-export const NoSearchResults = () => {
+export const NoSearchResults = ({ itemType }: { itemType: string }) => {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -337,7 +335,7 @@ export const NoSearchResults = () => {
       <Card className="flex justify-center items-center p-6 sm:p-8 text-center bg-muted/50 h-full">
         <div>
           <Search className="w-8 h-8 mx-auto text-muted-foreground" />
-          <p className="mt-4 text-lg font-medium">No matching goals</p>
+          <p className="mt-4 text-lg font-medium">No matching {itemType}</p>
           <p className="mt-2 text-sm text-muted-foreground">
             Try adjusting your search or filters
           </p>
