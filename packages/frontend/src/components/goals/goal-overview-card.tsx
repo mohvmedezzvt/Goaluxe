@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Progress } from "@/components/ui/progress";
+import { Progress } from "@heroui/react";
 import { Card, CardContent } from "../ui/card";
 import StatusTag from "./status-tag";
 import Link from "next/link";
@@ -53,12 +53,12 @@ const GoalOverviewCard = React.memo(
                       {limitCharacters({ str: description, maxLength: 50 })}
                     </p>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span>{progress}%</span>
-                    </div>
-                    <Progress value={progress} className="h-2" />
+                  <div className="">
+                    <Progress
+                      showValueLabel={true}
+                      value={progress}
+                      label="Progress"
+                    />
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3 text-sm">
