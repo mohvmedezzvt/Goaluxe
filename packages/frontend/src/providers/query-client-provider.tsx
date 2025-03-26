@@ -1,6 +1,6 @@
 "use client"; // Mark this as a Client Component
 
-import React from "react";
+import React, { useRef } from "react";
 import {
   QueryClient,
   QueryClientProvider as Provider,
@@ -12,23 +12,21 @@ export function QueryClientProvider({
 }: {
   children: React.ReactNode;
 }) {
-  // Create the client only once
-  const [queryClient] = React.useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            retry: 2,
-            refetchOnWindowFocus: true,
-            retryDelay: (attemptIndex) =>
-              Math.min(1000 * 2 ** attemptIndex, 30000),
-          },
+  // ✅ Ensure queryClient persists across renders
+  const queryClientRef = useRef<QueryClient | null>(null);
+  if (!queryClientRef.current) {
+    queryClientRef.current = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: 2,
+          staleTime: 0,
         },
-      })
-  );
+      },
+    });
+  }
 
   return (
-    <Provider client={queryClient}>
+    <Provider client={queryClientRef.current}>
       {children}
       {process.env.NODE_ENV === "development" ? (
         <ReactQueryDevtools initialIsOpen={false} />

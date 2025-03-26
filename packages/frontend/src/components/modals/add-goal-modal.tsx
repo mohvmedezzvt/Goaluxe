@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
   Button,
@@ -45,7 +45,7 @@ interface AddGoalModalProps {
  */
 export function AddGoalModal({ open, onOpenChange }: AddGoalModalProps) {
   const queryClient = useQueryClient();
-  const router = useRouter();
+  // const router = useRouter();
   const titleInputRef = useRef<HTMLInputElement>(null);
   // State for form data and validation errors
   const [formData, setFormData] = useState<{
@@ -73,11 +73,19 @@ export function AddGoalModal({ open, onOpenChange }: AddGoalModalProps) {
       }
       return response;
     },
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["Goals"] }); // Refresh the goals list
-      router.push(`dashboard/goal/${response?.id}`); // Redirect to the new goal's dashboard
-      queryClient.invalidateQueries({ queryKey: ["analytics"] }); // Refresh analytics data
-      onOpenChange(false); // Close the modal
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["Goals"],
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["analytics"],
+          refetchType: "all",
+        }),
+      ]);
+
+      onOpenChange(false);
     },
     onError: (error) => {
       console.error("Failed to create goal:", error);
