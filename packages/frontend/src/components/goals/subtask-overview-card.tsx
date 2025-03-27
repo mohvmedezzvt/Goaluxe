@@ -29,7 +29,7 @@ const SubtaskOverviewCard = React.memo(
         });
       },
       mutationKey: ["subtask", id, `goal-${goal}`],
-      onSuccess: async () => {
+      onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: ["subtasks", `goal-${goal}`],
         });
