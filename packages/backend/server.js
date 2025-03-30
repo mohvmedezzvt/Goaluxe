@@ -18,11 +18,21 @@ const port = process.env.PORT || 3001;
 
 connectDB();
 
+// In server.js
 try {
-  await redis.client.ping();
-  console.log('Redis connection successful');
+  const redisHealth = await redis.healthCheck();
+  if (redisHealth.available) {
+    console.log('Redis connection successful');
+  } else {
+    console.log(`Redis unavailable: ${redisHealth.reason}`);
+    if (process.env.CACHE_ENABLED === 'true') {
+      console.warn(
+        'Redis is enabled but unavailable. Some features may be slower.'
+      );
+    }
+  }
 } catch (error) {
-  console.error('Redis connection check failed:', error);
+  console.error('Redis health check failed:', error);
 }
 
 app.use(helmet());

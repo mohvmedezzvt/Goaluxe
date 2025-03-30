@@ -8,10 +8,19 @@ class RedisService {
     this.connected = false;
     this.connecting = false;
     this.reconnectAttempts = 0;
-    this.initialize();
-    this.client.on('ready', () => {
-      this.backgroundCleanup(`${CACHE_VERSION}:*`);
-    });
+    this.enabled = process.env.CACHE_ENABLED === 'true';
+
+    if (this.enabled) {
+      this.initialize();
+      this.client.on('ready', () => {
+        this.backgroundCleanup(`${CACHE_VERSION}:*`);
+      });
+      this.connect();
+    } else {
+      console.log(
+        'Redis caching disabled via CACHE_ENABLED environment variable'
+      );
+    }
   }
 
   initialize() {
@@ -20,22 +29,22 @@ class RedisService {
       pingInterval: 10_000,
     });
 
-    this.client.on('error', (err) => {
-      console.error('Redis error:', err);
-      this.connected = false;
-    });
+    if (this.enabled) {
+      this.client.on('error', (err) => {
+        console.error('Redis error:', err);
+        this.connected = false;
+      });
 
-    this.client.on('ready', () => {
-      console.log('Redis ready');
-      this.connected = true;
-      this.reconnectAttempts = 0;
-    });
-
-    this.connect();
+      this.client.on('ready', () => {
+        console.log('Redis ready');
+        this.connected = true;
+        this.reconnectAttempts = 0;
+      });
+    }
   }
 
   async connect() {
-    if (this.connected || this.connecting) return;
+    if (!this.enabled || this.connected || this.connecting) return;
 
     this.connecting = true;
     try {
@@ -54,6 +63,8 @@ class RedisService {
   }
 
   async get(key) {
+    if (!this.enabled) return null;
+
     try {
       const value = await this.client.get(key);
       return value ? JSON.parse(value) : null;
@@ -64,6 +75,7 @@ class RedisService {
   }
 
   async set(key, value, ttl = 300) {
+    if (!this.enabled) return;
     try {
       await this.client.setEx(key, ttl, JSON.stringify(value));
     } catch (error) {
@@ -72,6 +84,8 @@ class RedisService {
   }
 
   async del(...keys) {
+    if (!this.enabled) return 0;
+
     try {
       return await Promise.race([
         this.client.del(...keys),
@@ -86,7 +100,7 @@ class RedisService {
   }
 
   async backgroundCleanup(pattern) {
-    if (!this.connected) return;
+    if (!this.enabled || !this.connected) return;
 
     try {
       const keys = await this.client.keys(pattern);
@@ -99,6 +113,8 @@ class RedisService {
   }
 
   async trackKey(userId, key) {
+    if (!this.enabled) return;
+
     try {
       await this.client.sAdd(`user:${userId}:cache_keys`, key);
     } catch (error) {
@@ -107,6 +123,8 @@ class RedisService {
   }
 
   async invalidateUser(userId) {
+    if (!this.enabled) return;
+
     try {
       const userKey = `user:${userId}:cache_keys`;
       const keys = await this.client.sMembers(userKey);
@@ -122,11 +140,15 @@ class RedisService {
   }
 
   async healthCheck() {
+    if (!this.enabled) {
+      return { available: false, reason: 'Cache disabled by configuration' };
+    }
+
     try {
       await this.client.ping();
-      return true;
-    } catch {
-      return false;
+      return { available: true };
+    } catch (error) {
+      return { available: false, reason: error.message };
     }
   }
 }
