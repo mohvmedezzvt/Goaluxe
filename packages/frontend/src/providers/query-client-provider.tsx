@@ -1,38 +1,37 @@
 "use client"; // Mark this as a Client Component
 
-import React from "react";
+import React, { useMemo } from "react";
 import {
   QueryClient,
   QueryClientProvider as Provider,
 } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
-export function QueryClientProvider({
-  children,
-}: {
+interface QueryClientProviderProps {
   children: React.ReactNode;
-}) {
-  // Create the client only once
-  const [queryClient] = React.useState(
+}
+
+export function QueryClientProvider({ children }: QueryClientProviderProps) {
+  const queryClient = useMemo(
     () =>
       new QueryClient({
         defaultOptions: {
           queries: {
             retry: 2,
             refetchOnWindowFocus: true,
-            retryDelay: (attemptIndex) =>
-              Math.min(1000 * 2 ** attemptIndex, 30000),
+            staleTime: 1000 * 60 * 5, // 5 minutes
           },
         },
-      })
+      }),
+    []
   );
+
+  const isDev = process.env.NODE_ENV === "development";
 
   return (
     <Provider client={queryClient}>
       {children}
-      {process.env.NODE_ENV === "development" ? (
-        <ReactQueryDevtools initialIsOpen={false} />
-      ) : null}
+      {isDev && <ReactQueryDevtools initialIsOpen={false} />}
     </Provider>
   );
 }
