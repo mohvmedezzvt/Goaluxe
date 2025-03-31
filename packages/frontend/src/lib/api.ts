@@ -8,7 +8,11 @@ const API_BASE_URL =
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true, // Include credentials (cookies) in requests
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    "Cache-Control": "no-cache", // Ignore browser cache
+    Pragma: "no-cache",
+  },
 });
 
 // Request Interceptor - Attach Token
