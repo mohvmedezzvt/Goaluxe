@@ -79,6 +79,9 @@ export function AddGoalModal({ open, onOpenChange }: AddGoalModalProps) {
       queryClient.invalidateQueries({ queryKey: ["analytics"] }); // Refresh analytics data
       onOpenChange(false); // Close the modal
     },
+    onSettled: () => {
+      resetForm();
+    },
     onError: (error) => {
       console.error("Failed to create goal:", error);
     },
