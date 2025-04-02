@@ -82,6 +82,9 @@ const AddTaskModal = ({ open, onOpenChange, goalId }: AddTaskModalProps) => {
       }); // Refresh the goal's data
       onOpenChange(false); // Close the modal
     },
+    onSettled: () => {
+      resetForm();
+    },
   });
 
   /**
