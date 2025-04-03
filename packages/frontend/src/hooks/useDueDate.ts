@@ -9,10 +9,11 @@ const useDueDate = (isoDateString: string) => {
 
   // Calculate days difference
   const timeDiff = parsedDate.getTime() - today.getTime();
-  const daysDue = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+  const daysDue = Math.round(timeDiff / (1000 * 60 * 60 * 24));
 
   return {
     daysDue,
+    isDueToday: daysDue === 0,
     isOverdue: daysDue < 0,
     daysOverdue: daysDue < 0 ? Math.abs(daysDue) : 0,
     formattedDate: parsedDate.toLocaleDateString("en-US", {
