@@ -14,7 +14,7 @@ interface DeleteState {
   clearDeletes: () => void;
 }
 
-const useDelete = create<DeleteState>((set) => ({
+const useDeleteStore = create<DeleteState>((set) => ({
   isDeleting: {},
   setDeleteGoal: (id) => {
     set(() => ({
@@ -38,4 +38,4 @@ const useDelete = create<DeleteState>((set) => ({
   clearDeletes: () => set({ isDeleting: {} }),
 }));
 
-export default useDelete;
+export default useDeleteStore;
