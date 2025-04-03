@@ -1,5 +1,5 @@
-import { useDeleteGoal } from "@/hooks/use-delete";
-import useDelete from "@/stores/useDelete";
+import { useDelete } from "@/hooks/use-delete";
+import useDeleteStore from "@/stores/useDelete";
 import {
   Modal,
   ModalContent,
@@ -25,13 +25,13 @@ import React from "react";
  * @returns {JSX.Element} A modal dialog component with header, body text, and action buttons
  *
  * @dependencies
- * - useDelete hook - Provides setDelete function to manage deletion state
- * - useDeleteGoal hook - Provides handleDelete function and isDeleting state
+ * - useDeleteStore hook - Provides setDelete function to manage deletion state
+ * - useDelete hook - Provides handleDelete function and isDeleting state
  * - Modal components from UI library
  */
 const DeleteModal = () => {
-  const { isDeleting, clearDeletes } = useDelete();
-  const { handleDelete, deleteLoading } = useDeleteGoal(); // Hook for deleting goals
+  const { isDeleting, clearDeletes } = useDeleteStore();
+  const { handleDelete, deleteLoading } = useDelete(); // Hook for deleting goals
 
   return (
     <Modal
