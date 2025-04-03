@@ -1,47 +1,28 @@
 "use client";
-import { Button, Card, Checkbox, Spinner } from "@heroui/react";
-import React, { useState, useEffect } from "react";
+import { Card } from "@heroui/react";
+import React from "react";
 import StatusTag from "./status-tag";
-import { Calendar, Trash } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import limitCharacters, { cn } from "@/lib/utils";
-import { api } from "@/lib/api";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import useDelete from "@/stores/useDelete";
 import useEdit from "@/stores/useEdit";
+import useDueDate from "@/hooks/useDueDate";
 
 const SubtaskOverviewCard = React.memo(
   ({ id, title, status, dueDate, description, goal }: Subtask) => {
-    const [localStatus, setLocalStatus] = useState<string>(status);
-    const { setDeleteSubtask } = useDelete();
-    const queryClient = useQueryClient();
     const { setEditSubtask } = useEdit();
+    const { isOverdue } = useDueDate(dueDate as string);
 
-    // Sync localStatus with prop changes
-    useEffect(() => {
-      setLocalStatus(status);
-    }, [status]);
-
-    const { mutate, isPending } = useMutation({
-      mutationFn: async (newStatus: string) => {
-        return await api.patch(`/goals/${goal}/subtasks/${id}`, {
-          status: newStatus,
-        });
-      },
-      mutationKey: ["subtask", id, `goal-${goal}`],
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: ["subtasks", `goal-${goal}`],
-        });
-        queryClient.invalidateQueries({ queryKey: ["goal", goal] });
-      },
-    });
-
-    const handleComplete = () => {
-      const newStatus = localStatus === "completed" ? "pending" : "completed";
-      mutate(newStatus);
-      setLocalStatus(newStatus);
-    };
+    const statusColor =
+      status === "pending"
+        ? "yellow-400"
+        : status === "in-progress"
+          ? "green-400"
+          : status === "completed"
+            ? "blue-400"
+            : isOverdue
+              ? "red-800"
+              : "";
 
     return (
       <motion.div
@@ -54,25 +35,20 @@ const SubtaskOverviewCard = React.memo(
       >
         <Card
           className={cn(
-            "p-4 border shadow-sm hover:shadow-md border-default-300 transition-shadow min-h-fit decoration-default-foreground",
-            localStatus === "completed" && "!opacity-30"
+            "p-4 border shadow-sm hover:shadow-lg duration-500 min-h-fit decoration-default-foreground",
+            status === "completed" && "!opacity-50",
+            `border-${statusColor}`
           )}
         >
-          <div className="flex justify-between">
+          <div className="flex justify-between items-end">
             <div className="flex items-start gap-3 w-[60%]">
-              <Checkbox
-                className="mt-1"
-                onChange={handleComplete}
-                isSelected={localStatus === "completed"}
-                isDisabled={isPending}
-              />
               <div
                 className="space-y-2 w-full cursor-pointer"
                 onClick={() => setEditSubtask(id, goal)}
               >
                 <p
                   className={cn(
-                    localStatus === "completed" && "line-through",
+                    status === "completed" && "line-through",
                     "font-medium"
                   )}
                 >
@@ -80,7 +56,7 @@ const SubtaskOverviewCard = React.memo(
                 </p>
                 <p
                   className={cn(
-                    localStatus === "completed" && "line-through",
+                    status === "completed" && "line-through",
                     "text-gray-500 text-sm"
                   )}
                 >
@@ -89,25 +65,12 @@ const SubtaskOverviewCard = React.memo(
                 <div className="flex items-center gap-1 text-gray-500">
                   <Calendar size={14} />
                   <p className="text-sm">
-                    Due {new Date(dueDate).toLocaleDateString()}
+                    {new Date(dueDate).toLocaleDateString()}
                   </p>
-                  {isPending && <Spinner size="sm" />}
                 </div>
               </div>
             </div>
-            <div className="flex flex-col justify-between items-end">
-              <Button
-                isIconOnly
-                size="sm"
-                onPress={() => setDeleteSubtask(id, goal)}
-                className="bg-default-100"
-              >
-                <Trash className="text-red-500" size={16} />
-              </Button>
-              <div className={cn(isPending && "opacity-70")}>
-                <StatusTag status={localStatus} />
-              </div>
-            </div>
+            <StatusTag status={status} />
           </div>
         </Card>
       </motion.div>
