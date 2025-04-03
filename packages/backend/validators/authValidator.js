@@ -6,14 +6,19 @@ const passwordPattern =
 
 // Registration Validation Schema
 export const registerSchema = Joi.object({
-  username: Joi.string().alphanum().min(3).max(30).required().messages({
-    'string.base': 'Username must be a string',
-    'string.alphanum': 'Username must only contain letters and numbers',
-    'string.empty': 'Username is required',
-    'string.min': 'Username should have a minimum length of 3',
-    'string.max': 'Username should have a maximum length of 30',
-    'any.required': 'Username is required',
-  }),
+  username: Joi.string()
+    .min(3)
+    .max(30)
+    .pattern(/^[a-zA-Z0-9!@#$%^&*()_+={}\[\]:;"'<>,.?/\\|-]*$/)
+    .required()
+    .messages({
+      'string.base': 'Username must be a string',
+      'string.pattern.base': 'Username contains invalid characters',
+      'string.empty': 'Username is required',
+      'string.min': 'Username should have a minimum length of 3',
+      'string.max': 'Username should have a maximum length of 30',
+      'any.required': 'Username is required',
+    }),
   email: Joi.string().email().required().messages({
     'string.email': 'Please provide a valid email address',
     'string.empty': 'Email is required',
