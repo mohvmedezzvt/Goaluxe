@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
-import useDelete from "@/stores/useDelete";
+import useDeleteStore from "@/stores/useDelete";
+import useEdit from "@/stores/useEdit";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
@@ -9,9 +10,10 @@ import { useRouter } from "next/navigation";
  *
  * @returns {Object} - Contains `handleDeleteGoal` function and `isDeleting` state.
  */
-export function useDeleteGoal() {
+export function useDelete() {
   const queryClient = useQueryClient();
-  const { isDeleting, clearDeletes } = useDelete();
+  const { isDeleting, clearDeletes } = useDeleteStore();
+  const { clearEdits } = useEdit();
   const router = useRouter();
   const deletePath = isDeleting.goal?.goalId
     ? `goals/${isDeleting.goal.goalId}` // Goal deletion
@@ -46,6 +48,7 @@ export function useDeleteGoal() {
     },
     onSettled: () => {
       clearDeletes();
+      clearEdits();
     },
   });
 
