@@ -21,7 +21,9 @@ export function useDeleteGoal() {
     `${isDeleting.goal?.goalId ? `Goal-${isDeleting.goal.goalId}` : `subtask-goal-${isDeleting.subtask?.goalId}`}-delete-${isDeleting.subtask?.subtaskId}`,
   ];
 
-  const invalidateKey = isDeleting.goal?.goalId ? [`Goals`] : [`subtasks`];
+  const invalidateKey: string[] = isDeleting.goal?.goalId
+    ? [`Goals`]
+    : [`subtasks`, `goal-${isDeleting.subtask?.goalId}`];
 
   /**
    * Mutation for deleting a goal.
@@ -34,7 +36,10 @@ export function useDeleteGoal() {
     mutationKey: mutationKey,
     mutationFn: async () => api.delete(deletePath),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: invalidateKey });
+      invalidateKey.forEach((key) => {
+        queryClient.invalidateQueries({ queryKey: [key] });
+      });
+
       if (isDeleting.goal?.goalId) {
         router.push("/dashboard");
       }
