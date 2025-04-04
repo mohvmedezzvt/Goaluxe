@@ -6,6 +6,7 @@ const StatusTag = ({ status }: { status: string }) => {
   return (
     <Chip
       size="sm"
+      aria-label="status"
       className={cn(
         "px-2 py-1 rounded-full h-fit text-xs whitespace-nowrap ",
         status === "active" && "bg-green-100 text-green-700",
