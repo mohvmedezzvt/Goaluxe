@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "cy:run": "cypress open"
+    "test": "jest"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -26,13 +26,17 @@
     "@radix-ui/react-slot": "^1.1.2",
     "@tanstack/react-query": "^5.70.0",
     "@tanstack/react-query-devtools": "^5.70.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jest": "^29.5.14",
     "axios": "^1.8.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cookies-next": "^5.1.0",
-    "cypress": "^14.2.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.6.2",
+    "jest": "^29.7.0",
     "jose": "^5.10.0",
     "lucide-react": "^0.475.0",
     "nanoid": "^5.1.5",
@@ -53,8 +57,13 @@
     "@types/react-dom": "^19.0.4",
     "eslint": "^9.23.0",
     "eslint-config-next": "15.1.7",
+    "jest-environment-jsdom": "^29.7.0",
+    "jest-transform-stub": "^2.0.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
+    "ts-jest": "^29.3.1",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.2"
   }
 }
