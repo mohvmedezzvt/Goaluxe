@@ -47,39 +47,67 @@ export function AuthForm({ mode }: AuthFormProps) {
 
   const [errors, setErrors] = useState<FormErrors>({});
 
+  const isValidEmail = (email: string): string | null => {
+    if (!email) return "Email is required";
+    if (!validateEmail(email)) return "Please enter a valid email address";
+    return null;
+  };
+
+  const isValidPassword = (password: string, mode: string): string | null => {
+    if (!password) return "Password is required";
+    if (mode === "register" && !isStrongPassword(password))
+      return "Password must be at least 8 characters long, include letters, numbers, and a special character";
+    if (!validatePassword(password))
+      return "Password must be at least 8 characters";
+    return null;
+  };
+
+  const isValidName = (name: string): string | null => {
+    if (!name || !validateUsername(name)) {
+      return "Name must be 3-30 characters and can contain letters, numbers, underscores, and hyphens";
+    }
+    return null;
+  };
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
+    // Validate email
+    const emailError = isValidEmail(formData.email);
+    if (emailError) {
+      newErrors.email = emailError;
     }
 
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (mode === "register" && !isStrongPassword(formData.password)) {
-      newErrors.password =
-        "Password must be at least 8 characters long, include letters, numbers, and a special character";
-    } else if (!validatePassword(formData.password)) {
-      newErrors.password = "Password must be at least 8 characters";
+    // Validate password
+    const passwordError = isValidPassword(formData.password, mode);
+    if (passwordError) {
+      newErrors.password = passwordError;
     }
 
+    // Additional checks for registration mode
     if (mode === "register") {
-      if (!formData.firstName || !validateUsername(formData.firstName)) {
-        newErrors.firstName =
-          "First name must be 3-30 characters and can contain letters, numbers, underscores, and hyphens";
+      // Validate first name
+      const firstNameError = isValidName(formData.firstName);
+      if (firstNameError) {
+        newErrors.firstName = firstNameError;
       }
-      if (!formData.secondName || !validateUsername(formData.secondName)) {
-        newErrors.secondName =
-          "Second name must be 3-30 characters and can contain letters, numbers, underscores, and hyphens";
+
+      // Validate second name
+      const secondNameError = isValidName(formData.secondName);
+      if (secondNameError) {
+        newErrors.secondName = secondNameError;
       }
+
+      // Validate confirm password
       if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = "Passwords do not match";
       }
     }
 
+    // Update errors state
     setErrors(newErrors);
+
+    // Return true if no errors exist
     return Object.keys(newErrors).length === 0;
   };
 
