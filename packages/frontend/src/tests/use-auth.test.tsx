@@ -9,36 +9,28 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-vi.mock("@/lib/api", () => ({
-  auth: {
-    logout: vi.fn().mockResolvedValue({}),
-    login: vi.fn().mockResolvedValue({
-      success: true,
-      data: {
-        user: {
-          id: 1,
-          username: "testuser",
-          email: "test@example.com",
-          roles: ["user"],
-        },
-      },
-    }),
-    register: vi.fn().mockResolvedValue({
-      success: true,
-      data: {
-        user: {
-          id: 2,
-          username: "newuser",
-          email: "new@example.com",
-          roles: ["user"],
-        },
-      },
-    }),
-  },
-}));
-
 vi.mock("@heroui/react", () => ({
   addToast: vi.fn(),
+}));
+
+vi.mock("@/lib/api", () => ({
+  auth: {
+    login: vi.fn(() =>
+      Promise.resolve({
+        success: true,
+        data: {
+          user: {
+            id: "5",
+            username: "loginuser",
+            email: "log@example.com",
+            role: "user",
+          },
+        },
+      })
+    ),
+    logout: vi.fn(),
+    register: vi.fn(),
+  },
 }));
 
 // Utility: wrapper with React Query provider
@@ -56,11 +48,11 @@ describe("useAuth (Vitest)", () => {
   });
 
   it("should load user from localStorage", async () => {
-    const fakeUser = {
-      id: 1,
+    const fakeUser: User = {
+      id: "1",
       username: "localUser",
       email: "local@example.com",
-      roles: ["admin"],
+      role: "admin",
     };
     localStorage.setItem("user", JSON.stringify(fakeUser));
 
@@ -74,12 +66,39 @@ describe("useAuth (Vitest)", () => {
     expect(result.current.isAuthenticated).toBe(true);
   });
 
+  it("should handle login successfully", async () => {
+    const setErrors = vi.fn();
+    const setIsLoading = vi.fn();
+    const validateForm = vi.fn(() => true);
+
+    const { result } = renderHook(() => useAuth(), {
+      wrapper: createWrapper(),
+    });
+
+    const formData = { email: "log@example.com", password: "password" };
+
+    await act(async () => {
+      await result.current.handleAuth(
+        "login",
+        formData,
+        validateForm,
+        setErrors,
+        setIsLoading
+      );
+    });
+
+    expect(result.current.user?.email).toBe("log@example.com");
+    expect(setErrors).not.toHaveBeenCalled();
+    expect(setIsLoading).toHaveBeenCalledWith(true);
+    expect(setIsLoading).toHaveBeenCalledWith(false);
+  });
+
   it("should login and store user in localStorage", async () => {
     const { result } = renderHook(() => useAuth(), {
       wrapper: createWrapper(),
     });
 
-    const newUser: User = {
+    const fakeUser: User = {
       id: "3",
       username: "newuser",
       email: "new@example.com",
@@ -87,19 +106,19 @@ describe("useAuth (Vitest)", () => {
     };
 
     await act(async () => {
-      await result.current.login(newUser);
+      await result.current.login(fakeUser);
     });
 
-    expect(result.current.user).toEqual(newUser);
-    expect(JSON.parse(localStorage.getItem("user")!)).toEqual(newUser);
+    expect(result.current.user).toEqual(fakeUser);
+    expect(JSON.parse(localStorage.getItem("user")!)).toEqual(fakeUser);
   });
 
   it("should logout and clear user", async () => {
-    const fakeUser = {
-      id: 4,
+    const fakeUser: User = {
+      id: "4",
       username: "logoutuser",
       email: "logout@example.com",
-      roles: ["user"],
+      role: "user",
     };
     localStorage.setItem("user", JSON.stringify(fakeUser));
 
@@ -115,5 +134,6 @@ describe("useAuth (Vitest)", () => {
 
     expect(result.current.user).toBeNull();
     expect(localStorage.getItem("user")).toBeNull();
+    expect(result.current.isAuthenticated).toBe(false);
   });
 });
