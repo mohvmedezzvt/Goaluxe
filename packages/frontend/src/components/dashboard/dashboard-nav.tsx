@@ -32,6 +32,16 @@ export function DashboardNav() {
   const pathname = usePathname();
   const { logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const queryParams = "";
+  const onNavigation = () => {
+    history.pushState(
+      {
+        search: queryParams,
+      },
+      "",
+      window.location.pathname
+    );
+  };
   return (
     <motion.nav
       animate={open ? { width: "16rem" } : { width: "5rem" }}
@@ -62,6 +72,7 @@ export function DashboardNav() {
         <div className="space-y-1">
           {navItems.map((item) => (
             <Link
+              onClick={() => onNavigation()}
               key={item.href}
               href={item.href}
               className={cn(
