@@ -17,7 +17,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ChangeEvent, useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import Badge from "../ui/badge";
-import { useInitializeFilterFromURL } from "@/stores/useGoalFilter";
+import { useInitializeFilterFromURL } from "@/stores/useInitializeFilterFromURL";
 import { AnimatePresence, motion } from "framer-motion";
 import { Card } from "../ui/card";
 
@@ -78,7 +78,7 @@ export function Filters({
   setSearch,
   order,
   setOrder,
-  type,
+  type = "goal",
 }: FilterParams) {
   const params = new URLSearchParams(window.location.search);
   const router = useRouter();
@@ -102,7 +102,7 @@ export function Filters({
   const isFilter = status || sortBy;
 
   // Initialize filter state from URL parameters when component mounts
-  useInitializeFilterFromURL();
+  useInitializeFilterFromURL({ type });
 
   // Update URL query parameters when the debounced search input changes.
   useEffect(() => {
