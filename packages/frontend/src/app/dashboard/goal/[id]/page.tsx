@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { EllipsisVertical } from "lucide-react";
 import React, { useMemo, useState } from "react";
-import Link from "next/link";
 import {
   Button,
   Card,
@@ -45,6 +44,7 @@ import { useFetchQuery } from "@/hooks/use-fetch-query";
 import { useSearchParams } from "@/hooks/use-search-params";
 import SubtaskDetailsModal from "@/components/modals/subtask-details-modal";
 import useTaskFilter from "@/stores/useTaskFilter";
+import Link from "next/link";
 
 /**
  * GoalDetailsPage component renders the details of a specific goal.
@@ -157,6 +157,17 @@ const GoalDetailsPage = () => {
   const isSearchResultEmpty =
     !isLoading && (title || status) && subtasks?.data?.data.length === 0;
 
+  const queryParams = "";
+  const onNavigation = () => {
+    history.pushState(
+      {
+        search: queryParams,
+      },
+      "",
+      window.location.pathname
+    );
+  };
+
   return (
     <div className=" animate-in fade-in duration-500 p-4">
       <div className="max-w-[1500px] mx-auto">
@@ -165,13 +176,14 @@ const GoalDetailsPage = () => {
           <div className="col-span-full space-y-4">
             <div className="w-full flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <a
+                <Link
+                  onClick={() => onNavigation()}
                   href="/dashboard"
                   className="hover:bg-gray-100 dark:hover:bg-foreground-100 p-2 rounded-full transition-colors"
                   aria-label="Go back to dashboard"
                 >
                   <ChevronLeft size={20} />
-                </a>
+                </Link>
                 <h2 className="text-2xl font-bold">{goal?.title}</h2>
               </div>
               <Dropdown placement="left">
