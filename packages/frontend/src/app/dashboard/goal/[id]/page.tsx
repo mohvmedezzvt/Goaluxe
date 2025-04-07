@@ -41,10 +41,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import SubtaskOverviewCard from "@/components/goals/subtask-overview-card";
 import AddTaskModal from "@/components/modals/add-task-modal";
 import { Filters, NoSearchResults } from "@/components/goals/filters";
-import useGoalFilter from "@/stores/useGoalFilter";
 import { useFetchQuery } from "@/hooks/use-fetch-query";
 import { useSearchParams } from "@/hooks/use-search-params";
 import SubtaskDetailsModal from "@/components/modals/subtask-details-modal";
+import useTaskFilter from "@/stores/useTaskFilter";
 
 /**
  * GoalDetailsPage component renders the details of a specific goal.
@@ -77,7 +77,7 @@ const GoalDetailsPage = () => {
     setSearch,
     order,
     setOrder,
-  } = useGoalFilter();
+  } = useTaskFilter();
 
   // Extract query parameters for filtering and pagination
   const {
@@ -155,7 +155,7 @@ const GoalDetailsPage = () => {
   const isDataEmpty =
     !isLoading && !title && !status && subtasks?.data?.data.length === 0;
   const isSearchResultEmpty =
-    (title || status) && subtasks?.data?.data.length === 0;
+    !isLoading && (title || status) && subtasks?.data?.data.length === 0;
 
   return (
     <div className=" animate-in fade-in duration-500 p-4">
@@ -165,13 +165,13 @@ const GoalDetailsPage = () => {
           <div className="col-span-full space-y-4">
             <div className="w-full flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <Link
+                <a
                   href="/dashboard"
                   className="hover:bg-gray-100 dark:hover:bg-foreground-100 p-2 rounded-full transition-colors"
                   aria-label="Go back to dashboard"
                 >
                   <ChevronLeft size={20} />
-                </Link>
+                </a>
                 <h2 className="text-2xl font-bold">{goal?.title}</h2>
               </div>
               <Dropdown placement="left">

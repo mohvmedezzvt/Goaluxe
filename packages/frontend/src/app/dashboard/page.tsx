@@ -134,7 +134,8 @@ export default function DashboardPage() {
 
   const isLoading = loadingAnalytics || loadingGoals;
   const isDataEmpty = !isLoading && !title && !status && goals.length === 0;
-  const isSearchResultEmpty = (title || status) && goals.length === 0;
+  const isSearchResultEmpty =
+    !isLoading && (title || status) && goals.length === 0;
 
   // Memoized analytics data for quick stats
   const memoizedAnalytics = useMemo(
