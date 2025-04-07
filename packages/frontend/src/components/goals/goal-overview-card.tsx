@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { Progress } from "@heroui/react";
 import { Card, CardContent } from "../ui/card";
 import StatusTag from "./status-tag";
-import Link from "next/link";
 import limitCharacters from "@/lib/utils";
 
 /**
@@ -32,7 +31,7 @@ import limitCharacters from "@/lib/utils";
 const GoalOverviewCard = React.memo(
   ({ title, id, description, progress, status, dueDate }: Goal) => {
     return (
-      <Link href={`/dashboard/goal/${id}`} className="block">
+      <a href={`/dashboard/goal/${id}`} className="block">
         <motion.div
           key={id}
           layout
@@ -71,7 +70,7 @@ const GoalOverviewCard = React.memo(
             </CardContent>
           </Card>
         </motion.div>
-      </Link>
+      </a>
     );
   }
 );
