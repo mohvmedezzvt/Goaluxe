@@ -17,7 +17,6 @@ import {
   ModalFooter,
   ModalHeader,
   Skeleton,
-  Spinner,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Calendar, CheckCircle } from "lucide-react";
@@ -25,18 +24,29 @@ import StatusTag from "../goals/status-tag";
 import EditTaskModal from "./edit-task-modal";
 
 /**
- * Displays a modal containing subtask details for viewing, editing, and status management.
- * Uses data from the global `useEdit` store to determine which subtask to display.
+ * Component: SubtaskDetailsModal
+ *
+ * Displays a modal that allows users to view detailed information about a selected subtask,
+ * edit the subtask, update its status (pending, in-progress, completed), or delete it.
+ *
+ * Features:
+ * - Fetches subtask data from the API dynamically using React Query.
+ * - Visualizes due date status using a custom hook (`useDueDate`).
+ * - Enables status update via mutation and auto-invalidation of cache.
+ * - Connects to global stores (`useEdit`, `useDelete`) for centralized subtask management.
  */
 const SubtaskDetailsModal = () => {
   const queryClient = useQueryClient();
-  const [isOpen, setIsOpen] = useState<boolean>(false); // Controls visibility of the edit modal
-  const { setDeleteSubtask } = useDelete(); // Set subtask to delete via global state
-  const { isEditing, clearEdits } = useEdit(); // Access current editing subtask and function to clear it
+  const [isOpen, setIsOpen] = useState<boolean>(false); // State for controlling the edit modal
+  const { setDeleteSubtask } = useDelete(); // Store function to mark a subtask for deletion
+  const { isEditing, clearEdits } = useEdit(); // Editing state from global store
+  const [isLoading, setIsLoading] = useState<boolean>(false); // Loading state for mutation
 
   /**
-   * Fetch the subtask details from the API when a subtask is selected for editing.
-   * Query is enabled only when a subtask is selected.
+   * Query: Fetch subtask details from API
+   *
+   * Runs only if `isEditing.subtask` exists.
+   * Used to populate the modal with the current subtask’s data.
    */
   const { data, isPending } = useQuery({
     queryKey: [
@@ -53,24 +63,29 @@ const SubtaskDetailsModal = () => {
     enabled: !!isEditing.subtask,
   });
 
-  // Extract and format due date information using a custom hook
+  // Extract due date insights using a custom hook
   const { formattedDate, daysDue, isOverdue, daysOverdue, isDueToday } =
     useDueDate(data?.dueDate as string);
 
+  // Maintain local status state for optimistic UI updates
   const [localStatus, setLocalStatus] = useState<string>(
     data?.status as string
   );
 
-  // Sync local status with updated data
+  // Sync status if subtask data changes
   useEffect(() => {
     setLocalStatus(data?.status as string);
   }, [data?.status]);
 
   /**
-   * Mutation for updating subtask status (e.g., mark as completed/in-progress).
-   * Automatically invalidates relevant queries on settle.
+   * Mutation: Update subtask status (e.g., mark as completed or in-progress)
+   *
+   * Automatically invalidates:
+   * - Goal subtasks list
+   * - Goal details
+   * - This subtask's own query
    */
-  const { mutate, isPending: mutationPending } = useMutation({
+  const { mutate } = useMutation({
     mutationKey: [
       "subtask",
       data?.id,
@@ -82,11 +97,11 @@ const SubtaskDetailsModal = () => {
         status: newStatus,
       });
     },
+    onMutate: () => setIsLoading(true),
     onSettled: () => {
-      // Invalidate queries to refresh data after status change
+      setIsLoading(false);
       queryClient.invalidateQueries({
         queryKey: ["subtasks", `goal-${data?.goal}`],
-        exact: true,
       });
       queryClient.invalidateQueries({
         queryKey: ["goal", data?.goal],
@@ -100,7 +115,7 @@ const SubtaskDetailsModal = () => {
   });
 
   /**
-   * Triggers subtask deletion using global state logic.
+   * Trigger deletion logic via global state.
    */
   const handleDelete = useCallback(() => {
     if (data?.id && data?.goal) {
@@ -109,12 +124,10 @@ const SubtaskDetailsModal = () => {
   }, [data, setDeleteSubtask]);
 
   /**
-   * Updates subtask status based on current status.
-   * Cycles through: pending -> in-progress -> completed
+   * Cycles subtask status through:
+   *   "pending" → "in-progress" → "completed" → "pending"
    */
-  const handleMarkAs = () => {
-    if (!data?.goal || !data?.id) return;
-
+  const handleMarkAs = async () => {
     const newStatus =
       localStatus === "pending"
         ? "in-progress"
@@ -126,7 +139,7 @@ const SubtaskDetailsModal = () => {
     setLocalStatus(newStatus);
   };
 
-  // Determine top border color based on subtask status
+  // Visual styling based on subtask status or overdue state
   const borderTopColor =
     localStatus === "pending"
       ? "border-yellow-400"
@@ -138,24 +151,23 @@ const SubtaskDetailsModal = () => {
             ? "border-red-800"
             : "";
 
-  if (mutationPending) return null;
-
   return (
     <>
-      {/* Subtask details modal */}
+      {/* Main Modal - View Subtask */}
       <Modal
         backdrop="blur"
         className={cn(
-          "pt-4 border-t-8 ",
+          "pt-4 border-t-8 duration-500",
           borderTopColor,
-          mutationPending && "opacity-70"
+          isLoading && "pointer-events-none"
         )}
         isOpen={!!isEditing.subtask}
+        isDismissable={!isLoading}
         onClose={clearEdits}
       >
         <ModalContent className="max-w-lg">
           {isPending ? (
-            // Loading skeleton while fetching subtask
+            // Skeleton while loading
             <div className="space-y-4 p-4">
               <Skeleton className="h-6 w-3/4" />
               <div className="flex items-center gap-2">
@@ -167,8 +179,8 @@ const SubtaskDetailsModal = () => {
             </div>
           ) : (
             <>
+              {/* Modal Header: Title, Due Date, Status */}
               <ModalHeader className="flex justify-between gap-8 mt-2">
-                {/* Title and due date section */}
                 <div className="flex flex-col gap-1">
                   <p className="text-2xl font-bold tracking-tight break-word">
                     {data?.title}
@@ -202,14 +214,15 @@ const SubtaskDetailsModal = () => {
                 )}
               </ModalHeader>
 
+              {/* Modal Body: Description and Due Date */}
               <ModalBody className="space-y-5 pb-4">
-                {/* Description block */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center font-semibold">
                     <h2>Description</h2>
                     <Button
                       onPress={() => setIsOpen(true)}
                       radius="sm"
+                      isDisabled={isLoading}
                       className="font-medium"
                     >
                       Edit
@@ -220,7 +233,6 @@ const SubtaskDetailsModal = () => {
                   </Card>
                 </div>
 
-                {/* Due date block */}
                 <div className="space-y-2">
                   <h2 className="font-semibold">Due Date</h2>
                   <Card className="flex flex-row items-center gap-3 p-4 rounded-md">
@@ -247,12 +259,13 @@ const SubtaskDetailsModal = () => {
                 </div>
               </ModalBody>
 
+              {/* Modal Footer: Actions */}
               <Divider />
-
-              {/* Footer with action buttons */}
               <ModalFooter className="flex justify-between">
                 <div className="flex items-end">
                   <Button
+                    isLoading={isLoading}
+                    isDisabled={isLoading}
                     onPress={handleMarkAs}
                     aria-label="Change subtask status"
                   >
@@ -264,12 +277,12 @@ const SubtaskDetailsModal = () => {
                         ? "pending"
                         : "completed"}
                   </Button>
-                  {mutationPending && <Spinner size="sm" />}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
                     radius="sm"
                     className="bg-red-800"
+                    isDisabled={isLoading}
                     aria-label="Delete subtask"
                     onPress={handleDelete}
                   >
@@ -277,6 +290,7 @@ const SubtaskDetailsModal = () => {
                   </Button>
                   <Button
                     radius="sm"
+                    isDisabled={isLoading}
                     onPress={clearEdits}
                     aria-label="Close subtask modal"
                   >
@@ -289,7 +303,7 @@ const SubtaskDetailsModal = () => {
         </ModalContent>
       </Modal>
 
-      {/* Modal for editing the task */}
+      {/* Edit Modal - Opens when "Edit" is clicked */}
       <EditTaskModal
         isOpen={isOpen}
         isOverdue={isOverdue}
