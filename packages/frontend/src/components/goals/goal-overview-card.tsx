@@ -4,6 +4,7 @@ import { Progress } from "@heroui/react";
 import { Card, CardContent } from "../ui/card";
 import StatusTag from "./status-tag";
 import limitCharacters from "@/lib/utils";
+import Link from "next/link";
 
 /**
  * Component representing an overview card for a goal.
@@ -30,8 +31,22 @@ import limitCharacters from "@/lib/utils";
  */
 const GoalOverviewCard = React.memo(
   ({ title, id, description, progress, status, dueDate }: Goal) => {
+    const queryParams = "";
+    const onNavigation = () => {
+      history.pushState(
+        {
+          search: queryParams,
+        },
+        "",
+        window.location.pathname
+      );
+    };
     return (
-      <a href={`/dashboard/goal/${id}`} className="block">
+      <Link
+        href={`/dashboard/goal/${id}`}
+        className="block"
+        onClick={() => onNavigation()}
+      >
         <motion.div
           key={id}
           layout
@@ -70,7 +85,7 @@ const GoalOverviewCard = React.memo(
             </CardContent>
           </Card>
         </motion.div>
-      </a>
+      </Link>
     );
   }
 );
