@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserCircle } from "lucide-react";
-import Link from "next/link";
 import ThemeSwitch from "../ui/theme-switch";
 
 export function DashboardHeader() {
@@ -19,9 +18,9 @@ export function DashboardHeader() {
 
   return (
     <header className="h-16 border-b dark:border-b-white px-6 flex items-center justify-between dark:bg-content1 dark:text-white">
-      <Link href=".">
+      <a href="/dashboard">
         <h1 className="text-lg font-semibold">Dashboard</h1>
-      </Link>
+      </a>
       <div className="space-x-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
