@@ -83,6 +83,7 @@ const SubtaskDetailsModal = () => {
    * Automatically invalidates:
    * - Goal subtasks list
    * - Goal details
+   * - Goals list
    * - This subtask's own query
    */
   const { mutate } = useMutation({
@@ -98,19 +99,24 @@ const SubtaskDetailsModal = () => {
       });
     },
     onMutate: () => setIsLoading(true),
+   onSuccess:()=>{
+    queryClient.invalidateQueries({
+      queryKey: ["subtasks", `goal-${data?.goal}`],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["Goals"],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["goal", data?.goal],
+      exact: true,
+    });
+    queryClient.invalidateQueries({
+      queryKey: [`subtask-${data?.id}`, `goal-${data?.goal}`],
+      exact: true,
+    });
+   },
     onSettled: () => {
       setIsLoading(false);
-      queryClient.invalidateQueries({
-        queryKey: ["subtasks", `goal-${data?.goal}`],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["goal", data?.goal],
-        exact: true,
-      });
-      queryClient.invalidateQueries({
-        queryKey: [`subtask-${data?.id}`, `goal-${data?.goal}`],
-        exact: true,
-      });
     },
   });
 
