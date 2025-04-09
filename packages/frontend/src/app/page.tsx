@@ -245,7 +245,7 @@ export default function Home() {
             ].map((item, index) => (
               <motion.div key={index} className="relative z-10">
                 <Card className="relative h-full transition-transform hover:-translate-y-1 hover:shadow-lg">
-                  <CardBody className="p-6 text-center">
+                  <CardBody className="p-6 text-center flex flex-col items-center">
                     <motion.div
                       className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${item.color} mb-4 relative`}
                       whileHover={{ scale: 1.1 }}
