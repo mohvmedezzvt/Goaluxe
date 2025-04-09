@@ -44,7 +44,7 @@ vi.mock("@/stores/useEdit", () => ({
 }));
 
 // Now import the hook (after the mocks are defined).
-import { useDelete } from "../hooks/use-delete"; // adjust the path as necessary
+import { useDelete } from "../use-delete"; // adjust the path as necessary
 
 // Helper: Wrap our hook in a QueryClientProvider.
 const createWrapper = () => {
