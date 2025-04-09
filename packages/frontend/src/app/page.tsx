@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@heroui/react";
+import { Card,CardBody } from "@heroui/react";
 import { motion } from "framer-motion";
 import { ScrollParallax } from "react-just-parallax";
 import {
@@ -134,7 +134,7 @@ export default function Home() {
             >
               <div className="relative group w-full h-full max-sm:max-w-80">
                 <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-orange-500 blur-2xl dark:bg-white opacity-30 group-hover:opacity-40 transition-opacity" />
-                <Card className="relative w-full h-full rounded-3xl p-6">
+                <Card className="relative w-full h-full rounded-3xl p-6 !overflow-visible">
                   <Image
                     src="https://kzminnsnzri9g0fv76u2.lite.vusercontent.net/placeholder.svg?height=300&width=500"
                     alt="Goaluxe Dashboard Preview"
@@ -245,7 +245,7 @@ export default function Home() {
             ].map((item, index) => (
               <motion.div key={index} className="relative z-10">
                 <Card className="relative h-full transition-transform hover:-translate-y-1 hover:shadow-lg">
-                  <CardContent className="p-6 text-center">
+                  <CardBody className="p-6 text-center">
                     <motion.div
                       className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${item.color} mb-4 relative`}
                       whileHover={{ scale: 1.1 }}
@@ -262,7 +262,7 @@ export default function Home() {
                     <p className="text-zinc-600 dark:text-gray-300 leading-relaxed">
                       {item.description}
                     </p>
-                  </CardContent>
+                  </CardBody>
                 </Card>
               </motion.div>
             ))}
