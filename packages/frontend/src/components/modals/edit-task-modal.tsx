@@ -71,21 +71,26 @@ const EditTaskModal = ({
       );
     },
     onSuccess: () => {
-      onClose(); // Close modal on success
+    // Invalidate related queries to refresh data
+    queryClient.invalidateQueries({
+      queryKey: ["subtasks", `goal-${subtask?.goal}`],
+    });
+    
+    queryClient.invalidateQueries({
+      queryKey: ["Goals"],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["goal", subtask?.goal],
+      exact: true,
+    });
+    queryClient.invalidateQueries({
+      queryKey: [`subtask-${subtask?.id}`, `goal-${subtask?.goal}`],
+      exact: true,
+    });
     },
+    
     onSettled: () => {
-      // Invalidate related queries to refresh data
-      queryClient.invalidateQueries({
-        queryKey: ["subtasks", `goal-${subtask?.goal}`],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["goal", subtask?.goal],
-        exact: true,
-      });
-      queryClient.invalidateQueries({
-        queryKey: [`subtask-${subtask?.id}`, `goal-${subtask?.goal}`],
-        exact: true,
-      });
+      onClose(); // Close modal on success
     },
   });
 
@@ -182,8 +187,10 @@ const EditTaskModal = ({
       className={cn(
         "pt-4 border-t-8",
         borderTopColor,
-        isPending && "opacity-70"
+        isPending && "pointer-events-none"
       )}
+      isDismissable={!isPending}
+
     >
       <ModalContent>
         <form onSubmit={handleSubmit}>
@@ -269,7 +276,7 @@ const EditTaskModal = ({
             </Button>
 
             {/* Submit Button */}
-            <Button type="submit" disabled={isPending || isDateError}>
+            <Button type="submit" isLoading={isPending} disabled={isPending || isDateError}>
               {isPending ? "Saving..." : "Save Changes"}
             </Button>
           </ModalFooter>
