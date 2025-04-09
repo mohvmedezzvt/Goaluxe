@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@heroui/react";
 import { motion } from "framer-motion";
 import withPathLayout from "./hoc/with-path-layout";
 import ThemeSwitch from "./ui/theme-switch";
@@ -82,7 +82,7 @@ const Header = () => {
             <ThemeSwitch />
           </div>
 
-          <Button variant="ghost" size="icon" className="lg:hidden">
+          <Button variant="ghost" size="sm" className="lg:hidden">
             <svg
               className="h-6 w-6"
               fill="none"
